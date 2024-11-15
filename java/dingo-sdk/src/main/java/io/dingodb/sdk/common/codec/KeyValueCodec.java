@@ -19,6 +19,9 @@ package io.dingodb.sdk.common.codec;
 import io.dingodb.sdk.common.KeyValue;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+/**
+ * kv序列化接口.
+ */
 public interface KeyValueCodec {
     Object[] decode(KeyValue keyValue);
 

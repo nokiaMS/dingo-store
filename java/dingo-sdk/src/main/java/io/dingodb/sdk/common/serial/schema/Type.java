@@ -18,6 +18,9 @@ package io.dingodb.sdk.common.serial.schema;
 
 import java.util.Locale;
 
+/**
+ * 定义了序列化过程中使用到的schema类型的枚举值(不是数据库的类型).
+ */
 public enum Type {
     BOOLEAN, INTEGER, FLOAT, LONG, DOUBLE, BYTES, STRING, VECTOR, ARRAY,
     BOOLEANLIST, INTEGERLIST, FLOATLIST, LONGLIST, DOUBLELIST, STRINGLIST;

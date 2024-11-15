@@ -28,24 +28,64 @@ import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 
+/**
+ * kv序列化.
+ */
 public class DingoKeyValueCodec implements KeyValueCodec {
 
+    /**
+     * table id. 表id.
+     */
     private final long id;
+
+    /**
+     * table元信息.
+     */
     private final List<DingoSchema> schemas;
+
+    /**
+     * record encoder.  record编码器.
+     */
     RecordEncoder re;
+
+    /**
+     * record decoder. record解码器.
+     */
     RecordDecoder rd;
 
+    /**
+     * 构造函数.
+     * @param id    表id.
+     * @param schemas   表的元信息.
+     */
     public DingoKeyValueCodec(long id, List<DingoSchema> schemas) {
+        //如果没有指定元信息版本号则默认为1.
         this(1, id, schemas);
     }
 
+    /**
+     * 构造函数.
+     * @param schemaVersion     元信息版本号.
+     * @param id                表id.
+     * @param schemas           表元信息.
+     */
     public DingoKeyValueCodec(int schemaVersion, long id, List<DingoSchema> schemas) {
+        //设置表元信息.
         this.schemas = schemas;
+        //设置表id.
         this.id = id;
+
+        //设置record编码器.
         re = new RecordEncoder(schemaVersion, schemas, id);
+        //设置record解码器.
         rd = new RecordDecoder(schemaVersion, schemas, id);
     }
 
+    /**
+     * 定义of函数.
+     * @param table
+     * @return
+     */
     public static DingoKeyValueCodec of(Table table) {
         return of(
                 table.getVersion(),
@@ -80,6 +120,11 @@ public class DingoKeyValueCodec implements KeyValueCodec {
         return rd.decodeKeyPrefix(keyPrefix);
     }
 
+    /**
+     * 对value进行编码.
+     * @param record    待补充.
+     * @return      待补充.
+     */
     @Override
     public KeyValue encode(Object @NonNull [] record) {
         return re.encode(record);

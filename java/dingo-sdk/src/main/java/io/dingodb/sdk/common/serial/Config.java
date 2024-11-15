@@ -16,11 +16,17 @@
 
 package io.dingodb.sdk.common.serial;
 
+/**
+ * 序列化配置信息。
+ */
 public class Config {
     public final static int SCALE = 100;
     public final static int KEY_PREFIX_SIZE = 9;
     public final static int KEY_REVERSE_TAG_SIZE = 4;
 
+    /**
+     * codec(序列化器)版本号。
+     */
     public final static byte CODEC_VERSION = 1;
 
 }
