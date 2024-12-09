@@ -35,20 +35,38 @@ public interface DingoSchema<T> {
 
     int getLength();
 
+    int getWithNullTagLength();
+
+    int getValueLengthV2();
+
     void setAllowNull(boolean allowNull);
 
     boolean isAllowNull();
 
     void encodeKey(Buf buf, T data);
+    void encodeKeyV2(Buf buf, T data);
+
     void encodeKeyForUpdate(Buf buf, T data);
+    void encodeKeyForUpdateV2(Buf buf, T data);
+
     T decodeKey(Buf buf);
+    T decodeKeyV2(Buf buf);
+
     T decodeKeyPrefix(Buf buf);
+    T decodeKeyPrefixV2(Buf buf);
+
     void skipKey(Buf buf);
+    void skipKeyV2(Buf buf);
 
     void encodeKeyPrefix(Buf buf, T data);
+    void encodeKeyPrefixV2(Buf buf, T data);
 
     void encodeValue(Buf buf, T data);
-    T decodeValue(Buf buf);
-    void skipValue(Buf buf);
+    int encodeValueV2(Buf buf, T data);
 
+    T decodeValue(Buf buf);
+    T decodeValueV2(Buf buf);
+
+    void skipValue(Buf buf);
+    void skipValueV2(Buf buf);
 }

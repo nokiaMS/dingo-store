@@ -67,7 +67,13 @@ public class DoubleListSchema implements DingoSchema<List<Double>> {
         return getDataLength();
     }
 
-    private int getWithNullTagLength() {
+    @Override
+    public int getValueLengthV2() {
+        return 0;
+    }
+
+    @Override
+    public int getWithNullTagLength() {
         return 9;
     }
 
@@ -89,13 +95,27 @@ public class DoubleListSchema implements DingoSchema<List<Double>> {
     public void encodeKey(Buf buf, List<Double> data) {throw new RuntimeException("Array cannot be key");}
 
     @Override
+    public void encodeKeyV2(Buf buf, List<Double> data) {throw new RuntimeException("Array cannot be key");}
+
+    @Override
     public void encodeKeyForUpdate(Buf buf, List<Double> data) {throw new RuntimeException("Array cannot be key");}
+
+    @Override
+    public void encodeKeyForUpdateV2(Buf buf, List<Double> data) {throw new RuntimeException("Array cannot be key");}
 
     @Override
     public List<Double> decodeKey(Buf buf) {throw new RuntimeException("Array cannot be key");}
 
     @Override
+    public List<Double> decodeKeyV2(Buf buf) {throw new RuntimeException("Array cannot be key");}
+
+    @Override
     public List<Double> decodeKeyPrefix(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
+    public List<Double> decodeKeyPrefixV2(Buf buf) {
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -105,7 +125,17 @@ public class DoubleListSchema implements DingoSchema<List<Double>> {
     }
 
     @Override
+    public void skipKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
     public void encodeKeyPrefix(Buf buf, List<Double> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
+    public void encodeKeyPrefixV2(Buf buf, List<Double> data) {
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -136,6 +166,41 @@ public class DoubleListSchema implements DingoSchema<List<Double>> {
                 internalEncodeValue(buf, value);
             }
         }
+    }
+
+    @Override
+    public int encodeValueV2(Buf buf, List<Double> data) {
+        int len = 0;
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                len = 4 + data.size() * 8;
+                buf.ensureRemainder(len);
+
+                buf.writeInt(data.size());
+                for (Double value: data) {
+                    if(value == null) {
+                        throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                    }
+                    internalEncodeValue(buf, value);
+                }
+            }
+        } else {
+            len = 4 + data.size() * 8;
+            buf.ensureRemainder(len);
+
+            buf.writeInt(data.size());
+            for (Double value: data) {
+                if(value == null) {
+                    throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                }
+                internalEncodeValue(buf, value);
+            }
+        }
+
+        return len;
     }
 
     private void internalEncodeValue(Buf buf, Double data) {
@@ -176,12 +241,28 @@ public class DoubleListSchema implements DingoSchema<List<Double>> {
     }
 
     @Override
+    public List<Double> decodeValueV2(Buf buf) {
+        int size = buf.readInt();
+        List<Double> data = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            data.add(internalDecodeData(buf));
+        }
+        return data;
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
                 return;
             }
         }
+        int length = buf.readInt();
+        buf.skip(length * 8);
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
         int length = buf.readInt();
         buf.skip(length * 8);
     }

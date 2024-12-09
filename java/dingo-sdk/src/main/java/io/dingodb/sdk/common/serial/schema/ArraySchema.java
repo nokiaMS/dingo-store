@@ -39,6 +39,14 @@ public class ArraySchema<T> implements DingoSchema<T[]> {
         }
         return elementSchema.getLength();
     }
+    @Override
+    public int getValueLengthV2() {
+        return 0;
+    }
+
+    @Override
+    public int getWithNullTagLength() { return 1;}
+
     private int getLength(T[] data) {
         int sum = 0;
         int elementSchemaSize = 0;
@@ -74,6 +82,32 @@ public class ArraySchema<T> implements DingoSchema<T[]> {
         return sum;
     }
 
+    private int getLengthV2(T[] data) {
+        int sum = 0;
+        int elementSchemaSize = 0;
+        switch (elementSchema.getType()) {
+            case BOOLEAN:
+            case INTEGER:
+            case LONG:
+            case FLOAT:
+            case DOUBLE:
+            case BYTES:
+                elementSchemaSize = elementSchema.getLength();
+                sum = 4 + elementSchemaSize * data.length;
+                break;
+            case STRING:
+                for (T value: data) {
+                    byte[] bytes = ((String)value).getBytes(StandardCharsets.UTF_8);
+                    sum += bytes.length;
+                }
+                sum += 4;
+                break;
+            default:
+                break;
+        }
+        return sum;
+    }
+
     @Override
     public void setAllowNull(boolean allowNull) {
         this.allowNull = allowNull;
@@ -89,7 +123,17 @@ public class ArraySchema<T> implements DingoSchema<T[]> {
     }
 
     @Override
+    public void encodeKeyV2(Buf buf, T[] data) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
     public void encodeKeyForUpdate(Buf buf, T[] data) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
+    public void encodeKeyForUpdateV2(Buf buf, T[] data) {
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -99,7 +143,17 @@ public class ArraySchema<T> implements DingoSchema<T[]> {
     }
 
     @Override
+    public T[] decodeKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
     public T[] decodeKeyPrefix(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
+    public T[] decodeKeyPrefixV2(Buf buf) {
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -109,7 +163,17 @@ public class ArraySchema<T> implements DingoSchema<T[]> {
     }
 
     @Override
+    public void skipKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
     public void encodeKeyPrefix(Buf buf, T[] data) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
+    public void encodeKeyPrefixV2(Buf buf, T[] data) {
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -135,6 +199,34 @@ public class ArraySchema<T> implements DingoSchema<T[]> {
             }
         }
     }
+
+    @Override
+    public int encodeValueV2(Buf buf, T[] data) {
+        int len = 0;
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                len = getLengthV2(data);
+                buf.ensureRemainder(len);
+                buf.writeInt(data.length);
+                for (T element : data) {
+                    elementSchema.encodeValue(buf, element);
+                }
+            }
+        } else {
+            len = getLengthV2(data);
+            buf.ensureRemainder(len);
+            buf.writeInt(data.length);
+            for (T element : data) {
+                elementSchema.encodeValue(buf, element);
+            }
+        }
+
+        return len;
+    }
+
     @Override
     public T[] decodeValue(Buf buf) {
         if (allowNull) {
@@ -149,6 +241,17 @@ public class ArraySchema<T> implements DingoSchema<T[]> {
         }
         return array;
     }
+
+    @Override
+    public T[] decodeValueV2(Buf buf) {
+        int length = buf.readInt();
+        T[] array = (T[]) new Object[length];
+        for (int i = 0; i < length; i++) {
+            array[i] = elementSchema.decodeValue(buf);
+        }
+        return array;
+    }
+
     @Override
     public void skipValue(Buf buf) {
         if (allowNull) {
@@ -159,6 +262,14 @@ public class ArraySchema<T> implements DingoSchema<T[]> {
         int length = buf.readInt();
         for (int i = 0; i < length; i++) {
             elementSchema.skipValue(buf);
+        }
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
+        int length = buf.readInt();
+        for (int i = 0; i < length; i++) {
+            elementSchema.skipValueV2(buf);
         }
     }
 }

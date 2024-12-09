@@ -62,6 +62,14 @@ public class BytesSchema implements DingoSchema<byte[]> {
     }
 
     @Override
+    public int getValueLengthV2() {
+        return 0;
+    }
+
+    @Override
+    public int getWithNullTagLength() { return 1;}
+
+    @Override
     public void setAllowNull(boolean allowNull) {
         this.allowNull = allowNull;
     }
@@ -86,6 +94,32 @@ public class BytesSchema implements DingoSchema<byte[]> {
                 buf.reverseWriteInt(size);
             }
         } else {
+            int size = internalEncodeKey(buf, data);
+            buf.ensureRemainder(4);
+            buf.reverseWriteInt(size);
+        }
+    }
+
+    @Override
+    public void encodeKeyV2(Buf buf, byte[] data) {
+        if (allowNull) {
+            if (data == null) {
+                buf.ensureRemainder(5);
+                buf.write(NULL);
+                buf.reverseWriteInt0();
+            } else {
+                buf.ensureRemainder(1);
+                buf.write(NOTNULL);
+                int size = internalEncodeKey(buf, data);
+                buf.ensureRemainder(4);
+                buf.reverseWriteInt(size);
+            }
+        } else {
+            if(data == null) {
+                throw new RuntimeException("Data is not allow as null.");
+            }
+            buf.ensureRemainder(1);
+            buf.write(NOTNULL);
             int size = internalEncodeKey(buf, data);
             buf.ensureRemainder(4);
             buf.reverseWriteInt(size);
@@ -133,6 +167,25 @@ public class BytesSchema implements DingoSchema<byte[]> {
         }
     }
 
+    @Override
+    public void encodeKeyForUpdateV2(Buf buf, byte[] data) {
+        if (allowNull) {
+            if (data == null) {
+                buf.write(NULL);
+                buf.reverseWriteInt0();
+            } else {
+                buf.write(NOTNULL);
+                buf.reverseWriteInt(internalEncodeKeyForUpdate(buf, data));
+            }
+        } else {
+            if(data == null) {
+                throw new RuntimeException("Data is not allow as null.");
+            }
+            buf.write(NOTNULL);
+            buf.reverseWriteInt(internalEncodeKeyForUpdate(buf, data));
+        }
+    }
+
     private int internalEncodeKeyForUpdate(Buf buf, byte[] data) {
         int groupNum = data.length / 8;
         int size = (groupNum + 1) * 9;
@@ -174,12 +227,31 @@ public class BytesSchema implements DingoSchema<byte[]> {
     }
 
     @Override
+    public byte[] decodeKeyV2(Buf buf) {
+        if (buf.read() == NULL) {
+            buf.reverseSkipInt();
+            return null;
+        }
+
+        return internalReadBytes(buf);
+    }
+
+    @Override
     public byte[] decodeKeyPrefix(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
                 return null;
             }
         }
+        return internalReadKeyPrefixBytes(buf);
+    }
+
+    @Override
+    public byte[] decodeKeyPrefixV2(Buf buf) {
+        if (buf.read() == NULL) {
+            return null;
+        }
+
         return internalReadKeyPrefixBytes(buf);
     }
 
@@ -237,6 +309,11 @@ public class BytesSchema implements DingoSchema<byte[]> {
     }
 
     @Override
+    public void skipKeyV2(Buf buf) {
+        buf.skip(buf.reverseReadInt());
+    }
+
+    @Override
     public void encodeKeyPrefix(Buf buf, byte[] data) {
         if (allowNull) {
             buf.ensureRemainder(1);
@@ -247,6 +324,26 @@ public class BytesSchema implements DingoSchema<byte[]> {
                 internalEncodeKey(buf, data);
             }
         } else {
+            internalEncodeKey(buf, data);
+        }
+    }
+
+    @Override
+    public void encodeKeyPrefixV2(Buf buf, byte[] data) {
+        if (allowNull) {
+            buf.ensureRemainder(1);
+            if (data == null) {
+                buf.write(NULL);
+            } else {
+                buf.write(NOTNULL);
+                internalEncodeKey(buf, data);
+            }
+        } else {
+            if(data == null) {
+                throw new RuntimeException("Data is not allow as null.");
+            }
+            buf.ensureRemainder(1);
+            buf.write(NOTNULL);
             internalEncodeKey(buf, data);
         }
     }
@@ -271,6 +368,31 @@ public class BytesSchema implements DingoSchema<byte[]> {
     }
 
     @Override
+    public int encodeValueV2(Buf buf, byte[] data) {
+        int len = 0;
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                len = 4 + data.length;
+                buf.ensureRemainder(len);
+
+                buf.writeInt(data.length);
+                buf.write(data);
+            }
+        } else {
+            len = 4 + data.length;
+            buf.ensureRemainder(len);
+
+            buf.writeInt(data.length);
+            buf.write(data);
+        }
+
+        return len;
+    }
+
+    @Override
     public byte[] decodeValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
@@ -283,6 +405,11 @@ public class BytesSchema implements DingoSchema<byte[]> {
     }
 
     @Override
+    public byte[] decodeValueV2(Buf buf) {
+        return buf.read(buf.readInt());
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NOTNULL) {
@@ -291,5 +418,10 @@ public class BytesSchema implements DingoSchema<byte[]> {
         } else {
             buf.skip(buf.readInt());
         }
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
+        buf.skip(buf.readInt());
     }
 }

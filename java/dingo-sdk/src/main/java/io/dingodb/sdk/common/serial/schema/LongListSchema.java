@@ -67,7 +67,13 @@ public class LongListSchema implements DingoSchema<List<Long>> {
         return getDataLength();
     }
 
-    private int getWithNullTagLength() {
+    @Override
+    public int getValueLengthV2() {
+        return 0;
+    }
+
+    @Override
+    public int getWithNullTagLength() {
         return 9;
     }
 
@@ -89,7 +95,13 @@ public class LongListSchema implements DingoSchema<List<Long>> {
     public void encodeKey(Buf buf, List<Long> data) {throw new RuntimeException("Array cannot be key");}
 
     @Override
+    public void encodeKeyV2(Buf buf, List<Long> data) {throw new RuntimeException("Array cannot be key");}
+
+    @Override
     public void encodeKeyForUpdate(Buf buf, List<Long> data) {throw new RuntimeException("Array cannot be key");}
+
+    @Override
+    public void encodeKeyForUpdateV2(Buf buf, List<Long> data) {throw new RuntimeException("Array cannot be key");}
 
     private void internalEncodeNull(Buf buf) {
         buf.write((byte) 0);
@@ -108,7 +120,15 @@ public class LongListSchema implements DingoSchema<List<Long>> {
     public List<Long> decodeKey(Buf buf) {throw new RuntimeException("Array cannot be key");}
 
     @Override
+    public List<Long> decodeKeyV2(Buf buf) {throw new RuntimeException("Array cannot be key");}
+
+    @Override
     public List<Long> decodeKeyPrefix(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
+    public List<Long> decodeKeyPrefixV2(Buf buf) {
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -118,7 +138,17 @@ public class LongListSchema implements DingoSchema<List<Long>> {
     }
 
     @Override
+    public void skipKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
     public void encodeKeyPrefix(Buf buf, List<Long> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
+    public void encodeKeyPrefixV2(Buf buf, List<Long> data) {
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -149,6 +179,41 @@ public class LongListSchema implements DingoSchema<List<Long>> {
                 internalEncodeValue(buf, value);
             }
         }
+    }
+
+    @Override
+    public int encodeValueV2(Buf buf, List<Long> data) {
+        int len = 0;
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                len = 4 + data.size() * 8;
+                buf.ensureRemainder(len);
+
+                buf.writeInt(data.size());
+                for (Long value: data) {
+                    if(value == null) {
+                        throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                    }
+                    internalEncodeValue(buf, value);
+                }
+            }
+        } else {
+            len = 4 + data.size() * 8;
+            buf.ensureRemainder(len);
+
+            buf.writeInt(data.size());
+            for (Long value: data) {
+                if(value == null) {
+                    throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                }
+                internalEncodeValue(buf, value);
+            }
+        }
+
+        return len;
     }
 
     private void internalEncodeValue(Buf buf, Long data) {
@@ -188,12 +253,28 @@ public class LongListSchema implements DingoSchema<List<Long>> {
     }
 
     @Override
+    public List<Long> decodeValueV2(Buf buf) {
+        int size = buf.readInt();
+        List<Long> data = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            data.add(internalDecodeData(buf));
+        }
+        return data;
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
                 return;
             }
         }
+        int length = buf.readInt();
+        buf.skip(length * 8);
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
         int length = buf.readInt();
         buf.skip(length * 8);
     }

@@ -44,6 +44,11 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
     }
 
     @Override
+    public int getWithNullTagLength() {
+        return 2;
+    }
+
+    @Override
     public int getLength() {
         if (allowNull) {
             return getWithNullTagLength();
@@ -51,8 +56,9 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
         return getDataLength();
     }
 
-    private int getWithNullTagLength() {
-        return 2;
+    @Override
+    public int getValueLengthV2() {
+        return 0;
     }
 
     private int getDataLength() {
@@ -72,9 +78,17 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
     public void encodeKey(Buf buf, List<Boolean> data) {
         throw new RuntimeException("Array cannot be key");
     }
+    public void encodeKeyV2(Buf buf, List<Boolean> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
     public void encodeKeyForUpdate(Buf buf, List<Boolean> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
+    public void encodeKeyForUpdateV2(Buf buf, List<Boolean> data) {
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -84,7 +98,17 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
     }
 
     @Override
+    public List<Boolean> decodeKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
     public List<Boolean> decodeKeyPrefix(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
+    public List<Boolean> decodeKeyPrefixV2(Buf buf) {
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -94,9 +118,20 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
     }
 
     @Override
+    public void skipKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    @Override
     public void encodeKeyPrefix(Buf buf, List<Boolean> data) {
         throw new RuntimeException("Array cannot be key");
     }
+
+    @Override
+    public void encodeKeyPrefixV2(Buf buf, List<Boolean> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
     private void internalEncodeNull(Buf buf) {
         buf.write((byte) 0);
     }
@@ -139,12 +174,57 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
     }
 
     @Override
+    public int encodeValueV2(Buf buf, List<Boolean> data) {
+        int len = 0;
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                len = 4 + data.size();
+                buf.ensureRemainder(len);
+
+                buf.writeInt(data.size());
+                for (Boolean value: data) {
+                    if(value == null) {
+                        throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                    }
+                    internalEncodeData(buf, value);
+                }
+            }
+        } else {
+            len = 4 + data.size();
+            buf.ensureRemainder(len);
+
+            buf.writeInt(data.size());
+            for (Boolean value: data) {
+                if(value == null) {
+                    throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                }
+                internalEncodeData(buf, value);
+            }
+        }
+
+        return len;
+    }
+
+    @Override
     public List<Boolean> decodeValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
                 return null;
             }
         }
+        int size = buf.readInt();
+        List<Boolean> data = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            data.add(internalDecodeData(buf));
+        }
+        return data;
+    }
+
+    @Override
+    public List<Boolean> decodeValueV2(Buf buf) {
         int size = buf.readInt();
         List<Boolean> data = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
@@ -164,6 +244,12 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
                 return;
             }
         }
+        int length = buf.readInt();
+        buf.skip(length);
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
         int length = buf.readInt();
         buf.skip(length);
     }
