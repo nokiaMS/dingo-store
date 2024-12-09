@@ -64,7 +64,13 @@ public class LongSchema implements DingoSchema<Long> {
         return getDataLength();
     }
 
-    private int getWithNullTagLength() {
+    @Override
+    public int getValueLengthV2() {
+        return getDataLength();
+    }
+
+    @Override
+    public int getWithNullTagLength() {
         return 9;
     }
 
@@ -99,6 +105,32 @@ public class LongSchema implements DingoSchema<Long> {
         }
     }
 
+    /*
+    @Override
+    public void encodeKeyV2(Buf buf, Long data) {
+        if (allowNull) {
+            buf.ensureRemainder(getWithNullTagLength());
+            if (data == null) {
+                buf.write(NULL);
+                internalEncodeNull(buf);
+            } else {
+                buf.write(NOTNULL);
+                internalEncodeKey(buf, data);
+            }
+        } else {
+            if(data == null) {
+                throw new RuntimeException("Data is not allow as null.");
+            }
+            buf.ensureRemainder(getWithNullTagLength());
+            buf.write(NOTNULL);
+            internalEncodeKey(buf, data);
+        }
+    }
+    */
+    public void encodeKeyV2(Buf buf, Long data) {
+        encodeKey(buf, data);
+    }
+
     @Override
     public void encodeKeyForUpdate(Buf buf, Long data) {
         if (allowNull) {
@@ -112,6 +144,30 @@ public class LongSchema implements DingoSchema<Long> {
         } else {
             internalEncodeKey(buf, data);
         }
+    }
+
+    /*
+    @Override
+    public void encodeKeyForUpdateV2(Buf buf, Long data) {
+        if (allowNull) {
+            if (data == null) {
+                buf.write(NULL);
+                internalEncodeNull(buf);
+            } else {
+                buf.write(NOTNULL);
+                internalEncodeKey(buf, data);
+            }
+        } else {
+            if(data == null) {
+                throw new RuntimeException("Data is not allow as null.");
+            }
+            buf.write(NOTNULL);
+            internalEncodeKey(buf, data);
+        }
+    }
+    */
+    public void encodeKeyForUpdateV2(Buf buf, Long data) {
+        encodeKeyForUpdate(buf, data);
     }
 
     private void internalEncodeNull(Buf buf) {
@@ -153,20 +209,65 @@ public class LongSchema implements DingoSchema<Long> {
         return l;
     }
 
+    /*
+    @Override
+    public Long decodeKeyV2(Buf buf) {
+        if (buf.read() == NULL) {
+            buf.skip(getDataLength());
+            return null;
+        }
+
+        long l = 0;
+        l |= buf.read() & 0xFF ^ 0x80;
+        for (int i = 0; i < 7; i++) {
+            l <<= 8;
+            l |= buf.read() & 0xFF;
+        }
+        return l;
+    }
+    */
+    public Long decodeKeyV2(Buf buf) {
+        return decodeKey(buf);
+    }
+
     @Override
     public Long decodeKeyPrefix(Buf buf) {
         return decodeKey(buf);
     }
+
+    /*
+    @Override
+    public Long decodeKeyPrefixV2(Buf buf) {
+        return decodeKeyV2(buf);
+    }
+    */
 
     @Override
     public void skipKey(Buf buf) {
         buf.skip(getLength());
     }
 
+    /*
+    @Override
+    public void skipKeyV2(Buf buf) {
+        buf.skip(getWithNullTagLength());
+    }
+    */
+    public void skipKeyV2(Buf buf) {
+        skipKey(buf);
+    }
+
     @Override
     public void encodeKeyPrefix(Buf buf, Long data) {
         encodeKey(buf, data);
     }
+
+    /*
+    @Override
+    public void encodeKeyPrefixV2(Buf buf, Long data) {
+        encodeKeyV2(buf, data);
+    }
+    */
 
     @Override
     public void encodeValue(Buf buf, Long data) {
@@ -183,6 +284,24 @@ public class LongSchema implements DingoSchema<Long> {
             buf.ensureRemainder(getDataLength());
             internalEncodeValue(buf, data);
         }
+    }
+
+    @Override
+    public int encodeValueV2(Buf buf, Long data) {
+        int len = getValueLengthV2();
+        buf.ensureRemainder(len);
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                internalEncodeValue(buf, data);
+            }
+        } else {
+            internalEncodeValue(buf, data);
+        }
+
+        return len;
     }
 
     private void internalEncodeValue(Buf buf, Long data) {
@@ -213,7 +332,22 @@ public class LongSchema implements DingoSchema<Long> {
     }
 
     @Override
+    public Long decodeValueV2(Buf buf) {
+        long l = buf.read() & 0xFF;
+        for (int i = 0; i < 7; i++) {
+            l <<= 8;
+            l |= buf.read() & 0xFF;
+        }
+        return l;
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         buf.skip(getLength());
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
+        buf.skip(getValueLengthV2());
     }
 }

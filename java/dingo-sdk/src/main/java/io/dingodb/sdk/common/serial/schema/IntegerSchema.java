@@ -64,7 +64,13 @@ public class IntegerSchema implements DingoSchema<Integer> {
         return getDataLength();
     }
 
-    private int getWithNullTagLength() {
+    @Override
+    public int getValueLengthV2() {
+        return getDataLength();
+    }
+
+    @Override
+    public int getWithNullTagLength() {
         return 5;
     }
 
@@ -99,6 +105,33 @@ public class IntegerSchema implements DingoSchema<Integer> {
         }
     }
 
+    /*
+    @Override
+    public void encodeKeyV2(Buf buf, Integer data) {
+        if (allowNull) {
+            buf.ensureRemainder(getWithNullTagLength());
+            if (data == null) {
+                buf.write(NULL);
+                internalEncodeNull(buf);
+            } else {
+                buf.write(NOTNULL);
+                internalEncodeKey(buf, data);
+            }
+        } else {
+            if(data == null) {
+                throw new RuntimeException("Data is not allow as null.");
+            }
+            buf.ensureRemainder(getWithNullTagLength());
+            buf.write(NOTNULL);
+            internalEncodeKey(buf, data);
+        }
+    }
+    */
+    @Override
+    public void encodeKeyV2(Buf buf, Integer data) {
+        encodeKey(buf, data);
+    }
+
     @Override
     public void encodeKeyForUpdate(Buf buf, Integer data) {
         if (allowNull) {
@@ -112,6 +145,31 @@ public class IntegerSchema implements DingoSchema<Integer> {
         } else {
             internalEncodeKey(buf, data);
         }
+    }
+
+    /*
+    @Override
+    public void encodeKeyForUpdateV2(Buf buf, Integer data) {
+        if (allowNull) {
+            if (data == null) {
+                buf.write(NULL);
+                internalEncodeNull(buf);
+            } else {
+                buf.write(NOTNULL);
+                internalEncodeKey(buf, data);
+            }
+        } else {
+            if(data == null) {
+                throw new RuntimeException("Data is not allow as null.");
+            }
+            buf.write(NOTNULL);
+            internalEncodeKey(buf, data);
+        }
+    }
+     */
+    @Override
+    public void encodeKeyForUpdateV2(Buf buf, Integer data) {
+        encodeKeyForUpdate(buf, data);
     }
 
     private void internalEncodeNull(Buf buf) {
@@ -142,20 +200,64 @@ public class IntegerSchema implements DingoSchema<Integer> {
                 | (buf.read() & 0xFF));
     }
 
+    /*
+    @Override
+    public Integer decodeKeyV2(Buf buf) {
+        if (buf.read() == NULL) {
+            buf.skip(getWithNullTagLength());
+            return null;
+        }
+
+        return (((buf.read() & 0xFF ^ 0x80) << 24)
+                | ((buf.read() & 0xFF) << 16)
+                | ((buf.read() & 0xFF) << 8)
+                | (buf.read() & 0xFF));
+    }
+    */
+    @Override
+    public Integer decodeKeyV2(Buf buf) {
+        return decodeKey(buf);
+    }
+
     @Override
     public Integer decodeKeyPrefix(Buf buf) {
         return decodeKey(buf);
     }
+
+    /*
+    @Override
+    public Integer decodeKeyPrefixV2(Buf buf) {
+        return decodeKeyV2(buf);
+    }
+     */
 
     @Override
     public void skipKey(Buf buf) {
         buf.skip(getLength());
     }
 
+    /*
+    @Override
+    public void skipKeyV2(Buf buf) {
+        buf.skip(getWithNullTagLength());
+    }
+     */
+    @Override
+    public void skipKeyV2(Buf buf) {
+        skipKey(buf);
+    }
+
     @Override
     public void encodeKeyPrefix(Buf buf, Integer data) {
         encodeKey(buf, data);
     }
+
+    /*
+    @Override
+    public void encodeKeyPrefixV2(Buf buf, Integer data) {
+        encodeKeyV2(buf, data);
+    }
+    */
 
     @Override
     public void encodeValue(Buf buf, Integer data) {
@@ -172,6 +274,23 @@ public class IntegerSchema implements DingoSchema<Integer> {
             buf.ensureRemainder(getDataLength());
             internalEncodeValue(buf, data);
         }
+    }
+
+    @Override
+    public int encodeValueV2(Buf buf, Integer data) {
+        int len = getValueLengthV2();
+        buf.ensureRemainder(len);
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                internalEncodeValue(buf, data);
+            }
+        } else {
+            internalEncodeValue(buf, data);
+        }
+
+        return len;
     }
 
     private void internalEncodeValue(Buf buf, Integer data) {
@@ -196,7 +315,20 @@ public class IntegerSchema implements DingoSchema<Integer> {
     }
 
     @Override
+    public Integer decodeValueV2(Buf buf) {
+        return (((buf.read() & 0xFF) << 24)
+                | ((buf.read() & 0xFF) << 16)
+                | ((buf.read() & 0xFF) << 8)
+                | (buf.read() & 0xFF));
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         buf.skip(getLength());
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
+        buf.skip(getValueLengthV2());
     }
 }
