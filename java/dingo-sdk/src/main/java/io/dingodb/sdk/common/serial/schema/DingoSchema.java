@@ -35,6 +35,8 @@ public interface DingoSchema<T> {
 
     int getLength();
 
+    int getValueLengthV2();
+
     void setAllowNull(boolean allowNull);
 
     boolean isAllowNull();
@@ -48,7 +50,11 @@ public interface DingoSchema<T> {
     void encodeKeyPrefix(Buf buf, T data);
 
     void encodeValue(Buf buf, T data);
-    T decodeValue(Buf buf);
-    void skipValue(Buf buf);
+    int encodeValueV2(Buf buf, T data);
 
+    T decodeValue(Buf buf);
+    T decodeValueV2(Buf buf);
+
+    void skipValue(Buf buf);
+    void skipValueV2(Buf buf);
 }

@@ -64,6 +64,11 @@ public class BooleanSchema implements DingoSchema<Boolean> {
         return getDataLength();
     }
 
+    @Override
+    public int getValueLengthV2() {
+        return getDataLength();
+    }
+
     private int getWithNullTagLength() {
         return 2;
     }
@@ -174,6 +179,23 @@ public class BooleanSchema implements DingoSchema<Boolean> {
     }
 
     @Override
+    public int encodeValueV2(Buf buf, Boolean data) {
+        int len = getValueLengthV2();
+        buf.ensureRemainder(len);
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                internalEncodeData(buf, data);
+            }
+        } else {
+            internalEncodeData(buf, data);
+        }
+
+        return len;
+    }
+
+    @Override
     public Boolean decodeValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
@@ -185,7 +207,17 @@ public class BooleanSchema implements DingoSchema<Boolean> {
     }
 
     @Override
+    public Boolean decodeValueV2(Buf buf) {
+        return internalDecodeData(buf);
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         buf.skip(getLength());
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
+        buf.skip(getValueLengthV2());
     }
 }

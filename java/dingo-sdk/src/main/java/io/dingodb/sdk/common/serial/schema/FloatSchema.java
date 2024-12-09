@@ -64,6 +64,11 @@ public class FloatSchema implements DingoSchema<Float> {
         return getDataLength();
     }
 
+    @Override
+    public int getValueLengthV2() {
+        return getDataLength();
+    }
+
     private int getWithNullTagLength() {
         return 5;
     }
@@ -194,6 +199,24 @@ public class FloatSchema implements DingoSchema<Float> {
         }
     }
 
+    @Override
+    public int encodeValueV2(Buf buf, Float data) {
+        int len = getValueLengthV2();
+        buf.ensureRemainder(len);
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                internalEncodeValue(buf, data);
+            }
+        } else {
+            internalEncodeValue(buf, data);
+        }
+
+        return len;
+    }
+
     private void internalEncodeValue(Buf buf, Float data) {
         int in = Float.floatToIntBits(data);
         buf.write((byte) (in >>> 24));
@@ -219,7 +242,22 @@ public class FloatSchema implements DingoSchema<Float> {
     }
 
     @Override
+    public Float decodeValueV2(Buf buf) {
+        int in = buf.read() & 0xFF;
+        for (int i = 0; i < 3; i++) {
+            in <<= 8;
+            in |= buf.read() & 0xFF;
+        }
+        return Float.intBitsToFloat(in);
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         buf.skip(getLength());
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
+        buf.skip(getValueLengthV2());
     }
 }

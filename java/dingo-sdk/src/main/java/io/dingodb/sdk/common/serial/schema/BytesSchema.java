@@ -62,6 +62,11 @@ public class BytesSchema implements DingoSchema<byte[]> {
     }
 
     @Override
+    public int getValueLengthV2() {
+        return 0;
+    }
+
+    @Override
     public void setAllowNull(boolean allowNull) {
         this.allowNull = allowNull;
     }
@@ -271,6 +276,31 @@ public class BytesSchema implements DingoSchema<byte[]> {
     }
 
     @Override
+    public int encodeValueV2(Buf buf, byte[] data) {
+        int len = 0;
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                len = 4 + data.length;
+                buf.ensureRemainder(len);
+
+                buf.writeInt(data.length);
+                buf.write(data);
+            }
+        } else {
+            len = 4 + data.length;
+            buf.ensureRemainder(len);
+
+            buf.writeInt(data.length);
+            buf.write(data);
+        }
+
+        return len;
+    }
+
+    @Override
     public byte[] decodeValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
@@ -283,6 +313,11 @@ public class BytesSchema implements DingoSchema<byte[]> {
     }
 
     @Override
+    public byte[] decodeValueV2(Buf buf) {
+        return buf.read(buf.readInt());
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NOTNULL) {
@@ -291,5 +326,10 @@ public class BytesSchema implements DingoSchema<byte[]> {
         } else {
             buf.skip(buf.readInt());
         }
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
+        buf.skip(buf.readInt());
     }
 }

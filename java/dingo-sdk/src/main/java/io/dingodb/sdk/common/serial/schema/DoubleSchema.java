@@ -64,6 +64,11 @@ public class DoubleSchema implements DingoSchema<Double> {
         return getDataLength();
     }
 
+    @Override
+    public int getValueLengthV2() {
+        return getDataLength();
+    }
+
     private int getWithNullTagLength() {
         return 9;
     }
@@ -206,6 +211,24 @@ public class DoubleSchema implements DingoSchema<Double> {
         }
     }
 
+    @Override
+    public int encodeValueV2(Buf buf, Double data) {
+        int len = getValueLengthV2();
+        buf.ensureRemainder(len);
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                internalEncodeValue(buf, data);
+            }
+        } else {
+            internalEncodeValue(buf, data);
+        }
+
+        return len;
+    }
+
     private void internalEncodeValue(Buf buf, Double data) {
         long ln = Double.doubleToLongBits(data);
         buf.write((byte) (ln >>> 56));
@@ -235,7 +258,22 @@ public class DoubleSchema implements DingoSchema<Double> {
     }
 
     @Override
+    public Double decodeValueV2(Buf buf) {
+        long l = buf.read()  & 0xFF;
+        for (int i = 0; i < 7; i++) {
+            l <<= 8;
+            l |= buf.read() & 0xFF;
+        }
+        return Double.longBitsToDouble(l);
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         buf.skip(getLength());
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
+        buf.skip(getValueLengthV2());
     }
 }

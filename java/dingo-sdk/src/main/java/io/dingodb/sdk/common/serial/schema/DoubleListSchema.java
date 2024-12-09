@@ -67,6 +67,11 @@ public class DoubleListSchema implements DingoSchema<List<Double>> {
         return getDataLength();
     }
 
+    @Override
+    public int getValueLengthV2() {
+        return getDataLength();
+    }
+
     private int getWithNullTagLength() {
         return 9;
     }
@@ -138,6 +143,41 @@ public class DoubleListSchema implements DingoSchema<List<Double>> {
         }
     }
 
+    @Override
+    public int encodeValueV2(Buf buf, List<Double> data) {
+        int len = 0;
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                len = 4 + data.size() * 8;
+                buf.ensureRemainder(len);
+
+                buf.writeInt(data.size());
+                for (Double value: data) {
+                    if(value == null) {
+                        throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                    }
+                    internalEncodeValue(buf, value);
+                }
+            }
+        } else {
+            len = 4 + data.size() * 8;
+            buf.ensureRemainder(len);
+
+            buf.writeInt(data.size());
+            for (Double value: data) {
+                if(value == null) {
+                    throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                }
+                internalEncodeValue(buf, value);
+            }
+        }
+
+        return len;
+    }
+
     private void internalEncodeValue(Buf buf, Double data) {
         long ln = Double.doubleToLongBits(data);
         buf.write((byte) (ln >>> 56));
@@ -176,12 +216,28 @@ public class DoubleListSchema implements DingoSchema<List<Double>> {
     }
 
     @Override
+    public List<Double> decodeValueV2(Buf buf) {
+        int size = buf.readInt();
+        List<Double> data = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            data.add(internalDecodeData(buf));
+        }
+        return data;
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
                 return;
             }
         }
+        int length = buf.readInt();
+        buf.skip(length * 8);
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
         int length = buf.readInt();
         buf.skip(length * 8);
     }

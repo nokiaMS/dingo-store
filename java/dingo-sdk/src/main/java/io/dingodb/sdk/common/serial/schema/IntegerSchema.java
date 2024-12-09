@@ -64,6 +64,11 @@ public class IntegerSchema implements DingoSchema<Integer> {
         return getDataLength();
     }
 
+    @Override
+    public int getValueLengthV2() {
+        return getDataLength();
+    }
+
     private int getWithNullTagLength() {
         return 5;
     }
@@ -174,6 +179,23 @@ public class IntegerSchema implements DingoSchema<Integer> {
         }
     }
 
+    @Override
+    public int encodeValueV2(Buf buf, Integer data) {
+        int len = getValueLengthV2();
+        buf.ensureRemainder(len);
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                internalEncodeValue(buf, data);
+            }
+        } else {
+            internalEncodeValue(buf, data);
+        }
+
+        return len;
+    }
+
     private void internalEncodeValue(Buf buf, Integer data) {
         buf.write((byte) (data >>> 24));
         buf.write((byte) (data >>> 16));
@@ -196,7 +218,20 @@ public class IntegerSchema implements DingoSchema<Integer> {
     }
 
     @Override
+    public Integer decodeValueV2(Buf buf) {
+        return (((buf.read() & 0xFF) << 24)
+                | ((buf.read() & 0xFF) << 16)
+                | ((buf.read() & 0xFF) << 8)
+                | (buf.read() & 0xFF));
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         buf.skip(getLength());
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
+        buf.skip(getValueLengthV2());
     }
 }

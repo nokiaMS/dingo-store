@@ -66,6 +66,11 @@ public class StringListSchema implements DingoSchema<List<String>> {
     }
 
     @Override
+    public int getValueLengthV2() {
+        return 0;
+    }
+
+    @Override
     public void setAllowNull(boolean allowNull) {
         this.allowNull = allowNull;
     }
@@ -175,6 +180,51 @@ public class StringListSchema implements DingoSchema<List<String>> {
     }
 
     @Override
+    public int encodeValueV2(Buf buf, List<String> data) {
+        int len = 0;
+
+        if (allowNull) {
+            if (data == null) {
+                return 0;
+            } else {
+                len = 4;
+                buf.ensureRemainder(len);
+
+                buf.writeInt(data.size());
+                for (String value: data) {
+                    if(value == null) {
+                        throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                    }
+                    byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+                    buf.ensureRemainder(4 + bytes.length);
+                    buf.writeInt(bytes.length);
+                    buf.write(bytes);
+
+                    len += 4 + bytes.length;
+                }
+            }
+        } else {
+            len = 4;
+            buf.ensureRemainder( len);
+
+            buf.writeInt(data.size());
+            for (String value: data) {
+                if(value == null) {
+                    throw new IllegalArgumentException("Array type sub-elements do not support null values");
+                }
+                byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+                buf.ensureRemainder(4 + bytes.length);
+                buf.writeInt(bytes.length);
+                buf.write(bytes);
+
+                len += 4 + bytes.length;
+            }
+        }
+
+        return len;
+    }
+
+    @Override
     public List<String> decodeValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
@@ -190,12 +240,31 @@ public class StringListSchema implements DingoSchema<List<String>> {
     }
 
     @Override
+    public List<String> decodeValueV2(Buf buf) {
+        List<String> data = new ArrayList<>();
+        int length = buf.readInt();
+        for (int i = 0; i < length; i++) {
+            data.add(new String(buf.read(buf.readInt()), StandardCharsets.UTF_8));
+        }
+        return data;
+    }
+
+    @Override
     public void skipValue(Buf buf) {
         if (allowNull) {
             if (buf.read() == NULL) {
                 return;
             }
         }
+        int length = buf.readInt();
+        for (int i = 0; i < length; i++) {
+            int str_size = buf.readInt();
+            buf.skip(str_size);
+        }
+    }
+
+    @Override
+    public void skipValueV2(Buf buf) {
         int length = buf.readInt();
         for (int i = 0; i < length; i++) {
             int str_size = buf.readInt();
