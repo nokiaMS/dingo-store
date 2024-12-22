@@ -92,34 +92,39 @@ public class FloatListSchema implements DingoSchema<List<Float>> {
     }
 
     @Override
-    public void encodeKey(Buf buf, List<Float> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKey(Buf buf, List<Float> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyV2(Buf buf, List<Float> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyV2(Buf buf, List<Float> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyForUpdate(Buf buf, List<Float> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyForUpdate(Buf buf, List<Float> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyForUpdateV2(Buf buf, List<Float> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyForUpdateV2(Buf buf, List<Float> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public List<Float> decodeKey(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public List<Float> decodeKey(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public List<Float> decodeKeyV2(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public List<Float> decodeKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
     public List<Float> decodeKeyPrefix(Buf buf) {
         throw new RuntimeException("Array cannot be key");
     }
-
-    /*
-    @Override
-    public List<Float> decodeKeyPrefixV2(Buf buf) {
-        throw new RuntimeException("Array cannot be key");
-    }
-    */
 
     @Override
     public void skipKey(Buf buf) {
@@ -136,13 +141,6 @@ public class FloatListSchema implements DingoSchema<List<Float>> {
         throw new RuntimeException("Array cannot be key");
     }
 
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, List<Float> data) {
-        throw new RuntimeException("Array cannot be key");
-    }
-    */
-
     @Override
     public void encodeValue(Buf buf, List<Float> data) {
         if (allowNull) {
@@ -154,7 +152,7 @@ public class FloatListSchema implements DingoSchema<List<Float>> {
                 buf.write(NOTNULL);
                 buf.writeInt(data.size());
                 for (Float value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     internalEncodeValue(buf, value);
@@ -164,7 +162,7 @@ public class FloatListSchema implements DingoSchema<List<Float>> {
             buf.ensureRemainder(4 + data.size() * 4);
             buf.writeInt(data.size());
             for (Float value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 internalEncodeValue(buf, value);
@@ -185,7 +183,7 @@ public class FloatListSchema implements DingoSchema<List<Float>> {
 
                 buf.writeInt(data.size());
                 for (Float value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     internalEncodeValue(buf, value);
@@ -197,7 +195,7 @@ public class FloatListSchema implements DingoSchema<List<Float>> {
 
             buf.writeInt(data.size());
             for (Float value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 internalEncodeValue(buf, value);
@@ -215,7 +213,7 @@ public class FloatListSchema implements DingoSchema<List<Float>> {
         buf.write((byte) in);
     }
 
-    private Float internalDecodeData (Buf buf){
+    private Float internalDecodeData(Buf buf) {
         int in = buf.read() & 0xFF;
         for (int i = 0; i < 3; i++) {
             in <<= 8;

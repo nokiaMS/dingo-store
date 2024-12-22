@@ -92,16 +92,24 @@ public class IntegerListSchema implements DingoSchema<List<Integer>> {
     }
 
     @Override
-    public void encodeKey(Buf buf, List<Integer> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKey(Buf buf, List<Integer> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyV2(Buf buf, List<Integer> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyV2(Buf buf, List<Integer> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyForUpdate(Buf buf, List<Integer> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyForUpdate(Buf buf, List<Integer> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyForUpdateV2(Buf buf, List<Integer> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyForUpdateV2(Buf buf, List<Integer> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     private void internalEncodeNull(Buf buf) {
         buf.write((byte) 0);
@@ -118,30 +126,30 @@ public class IntegerListSchema implements DingoSchema<List<Integer>> {
     }
 
     @Override
-    public List<Integer> decodeKey(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public List<Integer> decodeKey(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public List<Integer> decodeKeyV2(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public List<Integer> decodeKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
     public List<Integer> decodeKeyPrefix(Buf buf) {
-        throw new RuntimeException("Array cannot be key");
-    }
 
-    /*
-    @Override
-    public List<Integer> decodeKeyPrefixV2(Buf buf) {
         throw new RuntimeException("Array cannot be key");
     }
-    */
 
     @Override
     public void skipKey(Buf buf) {
+
         throw new RuntimeException("Array cannot be key");
     }
 
     @Override
     public void skipKeyV2(Buf buf) {
+
         throw new RuntimeException("Array cannot be key");
     }
 
@@ -149,13 +157,6 @@ public class IntegerListSchema implements DingoSchema<List<Integer>> {
     public void encodeKeyPrefix(Buf buf, List<Integer> data) {
         throw new RuntimeException("Array cannot be key");
     }
-
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, List<Integer> data) {
-        throw new RuntimeException("Array cannot be key");
-    }
-    */
 
     @Override
     public void encodeValue(Buf buf, List<Integer> data) {
@@ -169,7 +170,7 @@ public class IntegerListSchema implements DingoSchema<List<Integer>> {
                 buf.writeInt(data.size());
                 // 1
                 for (Integer value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     internalEncodeValue(buf, value);
@@ -179,7 +180,7 @@ public class IntegerListSchema implements DingoSchema<List<Integer>> {
             buf.ensureRemainder(4 + data.size() * 4);
             buf.writeInt(data.size());
             for (Integer value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 internalEncodeValue(buf, value);
@@ -201,7 +202,7 @@ public class IntegerListSchema implements DingoSchema<List<Integer>> {
                 buf.writeInt(data.size());
                 // 1
                 for (Integer value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     internalEncodeValue(buf, value);
@@ -213,7 +214,7 @@ public class IntegerListSchema implements DingoSchema<List<Integer>> {
 
             buf.writeInt(data.size());
             for (Integer value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 internalEncodeValue(buf, value);
@@ -230,7 +231,7 @@ public class IntegerListSchema implements DingoSchema<List<Integer>> {
         buf.write((byte) data.intValue());
     }
 
-    private Integer internalDecodeData (Buf buf){
+    private Integer internalDecodeData( Buf buf ) {
         return (((buf.read() & 0xFF) << 24)
                 | ((buf.read() & 0xFF) << 16)
                 | ((buf.read() & 0xFF) << 8)

@@ -105,28 +105,6 @@ public class BooleanSchema implements DingoSchema<Boolean> {
         }
     }
 
-    /*
-    @Override
-    public void encodeKeyV2(Buf buf, Boolean data) {
-        if (allowNull) {
-            buf.ensureRemainder(getWithNullTagLength());
-            if (data == null) {
-                buf.write(NULL);
-                internalEncodeNull(buf);
-            } else {
-                buf.write(NOTNULL);
-                internalEncodeData(buf, data);
-            }
-        } else {
-            if(data == null) {
-                throw new RuntimeException("Data is not allow as null.");
-            }
-            buf.ensureRemainder(getWithNullTagLength());
-            buf.write(NOTNULL);
-            internalEncodeData(buf, data);
-        }
-    }
-    */
     public void encodeKeyV2(Buf buf, Boolean data) {
         encodeKey(buf, data);
     }
@@ -157,7 +135,7 @@ public class BooleanSchema implements DingoSchema<Boolean> {
                 internalEncodeData(buf, data);
             }
         } else {
-            if(data == null) {
+            if (data == null) {
                 throw new RuntimeException("Data is not allow as null.");
             }
             buf.write(NOTNULL);
@@ -169,8 +147,8 @@ public class BooleanSchema implements DingoSchema<Boolean> {
         buf.write((byte) 0);
     }
 
-    private void internalEncodeData(Buf buf, Boolean b) {
-        if (b) {
+    private void internalEncodeData(Buf buf, Boolean boolVal) {
+        if (boolVal) {
             buf.write((byte) 1);
         } else {
             buf.write((byte) 0);
@@ -188,17 +166,6 @@ public class BooleanSchema implements DingoSchema<Boolean> {
         return internalDecodeData(buf);
     }
 
-    /*
-    @Override
-    public Boolean decodeKeyV2(Buf buf) {
-        if (buf.read() == NULL) {
-            buf.skip(getDataLength());
-            return null;
-        }
-
-        return internalDecodeData(buf);
-    }
-    */
     public Boolean decodeKeyV2(Buf buf) {
         return decodeKey(buf);
     }
@@ -208,12 +175,6 @@ public class BooleanSchema implements DingoSchema<Boolean> {
         return decodeKey(buf);
     }
 
-    /*
-    @Override
-    public Boolean decodeKeyPrefixV2(Buf buf) {
-        return decodeKeyV2(buf);
-    }
-    */
 
     private Boolean internalDecodeData(Buf buf) {
         return buf.read() == (byte) 0 ? false : true;
@@ -224,12 +185,6 @@ public class BooleanSchema implements DingoSchema<Boolean> {
         buf.skip(getLength());
     }
 
-    /*
-    @Override
-    public void skipKeyV2(Buf buf) {
-        buf.skip(getWithNullTagLength());
-    }
-    */
     public void skipKeyV2(Buf buf) {
         skipKey(buf);
     }
@@ -238,13 +193,6 @@ public class BooleanSchema implements DingoSchema<Boolean> {
     public void encodeKeyPrefix(Buf buf, Boolean data) {
         encodeKey(buf, data);
     }
-
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, Boolean data) {
-        encodeKeyV2(buf, data);
-    }
-    */
 
     @Override
     public void encodeValue(Buf buf, Boolean data) {

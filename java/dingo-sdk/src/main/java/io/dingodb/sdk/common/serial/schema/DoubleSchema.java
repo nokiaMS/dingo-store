@@ -105,28 +105,6 @@ public class DoubleSchema implements DingoSchema<Double> {
         }
     }
 
-    /*
-    @Override
-    public void encodeKeyV2(Buf buf, Double data) {
-        if (allowNull) {
-            buf.ensureRemainder(getWithNullTagLength());
-            if (data == null) {
-                buf.write(NULL);
-                internalEncodeNull(buf);
-            } else {
-                buf.write(NOTNULL);
-                internalEncodeKey(buf, data);
-            }
-        } else {
-            if(data == null) {
-                throw new RuntimeException("Data is not allow as null.");
-            }
-            buf.ensureRemainder(getDataLength());
-            buf.write(NOTNULL);
-            internalEncodeKey(buf, data);
-        }
-    }
-    */
     public void encodeKeyV2(Buf buf, Double data) {
         encodeKey(buf, data);
     }
@@ -157,7 +135,7 @@ public class DoubleSchema implements DingoSchema<Double> {
                 internalEncodeKey(buf, data);
             }
         } else {
-            if(data == null) {
+            if (data == null) {
                 throw new RuntimeException("Data is not allow as null.");
             }
             buf.write(NOTNULL);
@@ -225,32 +203,6 @@ public class DoubleSchema implements DingoSchema<Double> {
         return Double.longBitsToDouble(l);
     }
 
-    /*
-    @Override
-    public Double decodeKeyV2(Buf buf) {
-        if (buf.read() == NULL) {
-            buf.skip(getWithNullTagLength());
-            return null;
-        }
-
-        long l = buf.read() & 0xFF;
-
-        if (l >= 0x80) {
-            l = l ^ 0x80;
-            for (int i = 0; i < 7; i++) {
-                l <<= 8;
-                l |= buf.read() & 0xFF;
-            }
-        } else {
-            l = ~l;
-            for (int i = 0; i < 7; i++) {
-                l <<= 8;
-                l |= ~buf.read() & 0xFF;
-            }
-        }
-        return Double.longBitsToDouble(l);
-    }
-    */
     public Double decodeKeyV2(Buf buf) {
         return decodeKey(buf);
     }
@@ -260,24 +212,11 @@ public class DoubleSchema implements DingoSchema<Double> {
         return decodeKey(buf);
     }
 
-    /*
-    @Override
-    public Double decodeKeyPrefixV2(Buf buf) {
-        return decodeKeyV2(buf);
-    }
-    */
-
     @Override
     public void skipKey(Buf buf) {
         buf.skip(getLength());
     }
 
-    /*
-    @Override
-    public void skipKeyV2(Buf buf) {
-        buf.skip(getWithNullTagLength());
-    }
-     */
     @Override
     public void skipKeyV2(Buf buf) {
         skipKey(buf);
@@ -287,13 +226,6 @@ public class DoubleSchema implements DingoSchema<Double> {
     public void encodeKeyPrefix(Buf buf, Double data) {
         encodeKey(buf, data);
     }
-
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, Double data) {
-        encodeKeyV2(buf, data);
-    }
-    */
 
     @Override
     public void encodeValue(Buf buf, Double data) {

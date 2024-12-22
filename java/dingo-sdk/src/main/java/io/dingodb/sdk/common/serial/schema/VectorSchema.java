@@ -66,7 +66,9 @@ public class VectorSchema implements DingoSchema<String> {
     }
 
     @Override
-    public int getWithNullTagLength() { return 1;}
+    public int getWithNullTagLength() {
+        return 1;
+    }
 
     @Override
     public int getValueLengthV2() {
@@ -86,6 +88,7 @@ public class VectorSchema implements DingoSchema<String> {
     public void encodeKey(Buf buf, String data) {
         throw new RuntimeException("Vector cannot be key");
     }
+
     public void encodeKeyV2(Buf buf, String data) {
         throw new RuntimeException("Vector cannot be key");
     }
@@ -115,13 +118,6 @@ public class VectorSchema implements DingoSchema<String> {
         throw new RuntimeException("Vector cannot be key");
     }
 
-    /*
-    @Override
-    public String decodeKeyPrefixV2(Buf buf) {
-        throw new RuntimeException("Vector cannot be key");
-    }
-    */
-
     @Override
     public void skipKey(Buf buf) {
         throw new RuntimeException("Vector cannot be key");
@@ -136,13 +132,6 @@ public class VectorSchema implements DingoSchema<String> {
     public void encodeKeyPrefix(Buf buf, String data) {
         throw new RuntimeException("Vector cannot be key");
     }
-
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, String data) {
-        throw new RuntimeException("Vector cannot be key");
-    }
-    */
 
     @Override
     public void encodeValue(Buf buf, String data) {

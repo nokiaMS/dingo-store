@@ -66,7 +66,9 @@ public class StringListSchema implements DingoSchema<List<String>> {
     }
 
     @Override
-    public int getWithNullTagLength() { return 1;}
+    public int getWithNullTagLength() {
+        return 1;
+    }
 
     @Override
     public int getValueLengthV2() {
@@ -83,8 +85,13 @@ public class StringListSchema implements DingoSchema<List<String>> {
         return allowNull;
     }
 
-    public void encodeKey(Buf buf, List<String> data) {throw new RuntimeException("Array cannot be key");}
-    public void encodeKeyV2(Buf buf, List<String> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKey(Buf buf, List<String> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
+
+    public void encodeKeyV2(Buf buf, List<String> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     private int internalEncodeKey(Buf buf, byte[] data) {
         int groupNum = data.length / 8;
@@ -113,24 +120,29 @@ public class StringListSchema implements DingoSchema<List<String>> {
     }
 
     @Override
-    public void encodeKeyForUpdate(Buf buf, List<String> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyForUpdate(Buf buf, List<String> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyForUpdateV2(Buf buf, List<String> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyForUpdateV2(Buf buf, List<String> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public List<String> decodeKey(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public List<String> decodeKey(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public List<String> decodeKeyV2(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public List<String> decodeKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public List<String> decodeKeyPrefix(Buf buf) {throw new RuntimeException("Array cannot be key");}
-
-    /*
-    @Override
-    public List<String> decodeKeyPrefixV2(Buf buf) {throw new RuntimeException("Array cannot be key");}
-    */
+    public List<String> decodeKeyPrefix(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     private byte[] internalReadBytes(Buf buf) {
         int length = buf.reverseReadInt();
@@ -155,18 +167,19 @@ public class StringListSchema implements DingoSchema<List<String>> {
     }
 
     @Override
-    public void skipKey(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public void skipKey(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void skipKeyV2(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public void skipKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyPrefix(Buf buf, List<String> data) {throw new RuntimeException("Array cannot be key");}
-
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, List<String> data) {throw new RuntimeException("Array cannot be key");}
-    */
+    public void encodeKeyPrefix(Buf buf, List<String> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
     public void encodeValue(Buf buf, List<String> data) {
@@ -179,7 +192,7 @@ public class StringListSchema implements DingoSchema<List<String>> {
                 buf.write(NOTNULL);
                 buf.writeInt(data.size());
                 for (String value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
@@ -192,7 +205,7 @@ public class StringListSchema implements DingoSchema<List<String>> {
             buf.ensureRemainder( 4 );
             buf.writeInt(data.size());
             for (String value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
@@ -216,7 +229,7 @@ public class StringListSchema implements DingoSchema<List<String>> {
 
                 buf.writeInt(data.size());
                 for (String value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
@@ -233,7 +246,7 @@ public class StringListSchema implements DingoSchema<List<String>> {
 
             buf.writeInt(data.size());
             for (String value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
@@ -282,8 +295,8 @@ public class StringListSchema implements DingoSchema<List<String>> {
         }
         int length = buf.readInt();
         for (int i = 0; i < length; i++) {
-            int str_size = buf.readInt();
-            buf.skip(str_size);
+            int strSize = buf.readInt();
+            buf.skip(strSize);
         }
     }
 
@@ -291,8 +304,8 @@ public class StringListSchema implements DingoSchema<List<String>> {
     public void skipValueV2(Buf buf) {
         int length = buf.readInt();
         for (int i = 0; i < length; i++) {
-            int str_size = buf.readInt();
-            buf.skip(str_size);
+            int strSize = buf.readInt();
+            buf.skip(strSize);
         }
     }
 }

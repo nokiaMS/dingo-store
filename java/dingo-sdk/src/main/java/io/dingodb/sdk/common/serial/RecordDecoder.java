@@ -19,7 +19,11 @@ package io.dingodb.sdk.common.serial;
 import io.dingodb.sdk.common.KeyValue;
 import io.dingodb.sdk.common.serial.schema.DingoSchema;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class RecordDecoder {
     private final int schemaVersion;
@@ -91,70 +95,6 @@ public class RecordDecoder {
         return record;
     }
 
-    public Object[] decodeV2(KeyValue keyValue) {
-        Buf keyBuf = new BufImpl(keyValue.getKey());
-        Buf valueBuf = new BufImpl(keyValue.getValue());
-
-        checkKeyValue(keyBuf, valueBuf);
-
-        //decode value.
-        int cntNotNullCols = valueBuf.readShort();
-        int cntNullCols = valueBuf.readShort();
-        int totalColCnt = cntNotNullCols + cntNullCols;
-        int idsPos = 4 + 2 * 2;
-        int offsetPos = idsPos + 2 * totalColCnt;
-        int dataPos = offsetPos + 4 * totalColCnt;
-
-        //get id-offset map.
-        Map<Short, Integer> idOffsetMap = new TreeMap<Short, Integer>();
-
-        for(int i = 0; i < totalColCnt; i++) {
-            short id = valueBuf.readShortAt(idsPos);
-            int offset = valueBuf.readIntAt(offsetPos);
-            idOffsetMap.put(id, offset);
-            idsPos += 2;
-            offsetPos += 4;
-        }
-
-        valueBuf.setForwardOffset(dataPos);
-
-        Object[] record = new Object[schemas.size()];
-        for (DingoSchema<?> schema : schemas) {
-            if (schema.isKey()) {
-                record[schema.getIndex()] = schema.decodeKeyV2(keyBuf);
-            } else {
-                if (valueBuf.isEnd()) {
-                    continue;
-                }
-
-                int index = schema.getIndex();
-                if(idOffsetMap.get((short)index) == -1) {
-                    //null column.
-                    record[index] = null;
-                } else {
-                    record[index] = schema.decodeValueV2(valueBuf);
-                }
-            }
-        }
-        return record;
-    }
-
-    public Object[] decode(KeyValue keyValue) {
-        Buf keyBuf = new BufImpl(keyValue.getKey());
-        Buf valueBuf = new BufImpl(keyValue.getValue());
-
-        int codecVer = checkKeyValue(keyBuf, valueBuf);
-        if(codecVer <= Config.CODEC_VERSION) {
-            return decodeV1(keyValue);
-        } else {
-            return decodeV2(keyValue);
-        }
-    }
-    /*
-    public Object[] decode(KeyValue keyValue) {
-            return decodeV2(keyValue);
-    }*/
-
     private Object[] decodeV1(KeyValue keyValue, int[] columnIndexes) {
         Buf keyBuf = new BufImpl(keyValue.getKey());
         Buf valueBuf = new BufImpl(keyValue.getValue());
@@ -182,6 +122,54 @@ public class RecordDecoder {
         return record;
     }
 
+    public Object[] decodeV2(KeyValue keyValue) {
+        Buf keyBuf = new BufImpl(keyValue.getKey());
+        Buf valueBuf = new BufImpl(keyValue.getValue());
+
+        checkKeyValue(keyBuf, valueBuf);
+
+        //decode value.
+        int cntNotNullCols = valueBuf.readShort();
+        int cntNullCols = valueBuf.readShort();
+        int totalColCnt = cntNotNullCols + cntNullCols;
+        int idsPos = 4 + 2 * 2;
+        int offsetPos = idsPos + 2 * totalColCnt;
+        int dataPos = offsetPos + 4 * totalColCnt;
+
+        //get id-offset map.
+        Map<Short, Integer> idOffsetMap = new TreeMap<Short, Integer>();
+
+        for (int i = 0; i < totalColCnt; i++) {
+            short id = valueBuf.readShortAt(idsPos);
+            int offset = valueBuf.readIntAt(offsetPos);
+            idOffsetMap.put(id, offset);
+            idsPos += 2;
+            offsetPos += 4;
+        }
+
+        valueBuf.setForwardOffset(dataPos);
+
+        Object[] record = new Object[schemas.size()];
+        for (DingoSchema<?> schema : schemas) {
+            if (schema.isKey()) {
+                record[schema.getIndex()] = schema.decodeKeyV2(keyBuf);
+            } else {
+                if (valueBuf.isEnd()) {
+                    continue;
+                }
+
+                int index = schema.getIndex();
+                if (idOffsetMap.get((short)index) == -1) {
+                    //null column.
+                    record[index] = null;
+                } else {
+                    record[index] = schema.decodeValueV2(valueBuf);
+                }
+            }
+        }
+        return record;
+    }
+
     private Object[] decodeV2(KeyValue keyValue, int[] columnIndexes) {
         Buf keyBuf = new BufImpl(keyValue.getKey());
         Buf valueBuf = new BufImpl(keyValue.getValue());
@@ -199,7 +187,7 @@ public class RecordDecoder {
         //get id-offset map.
         Map<Short, Integer> idOffsetMap = new TreeMap<Short, Integer>();
 
-        for(int i = 0; i < totalColCnt; i++) {
+        for (int i = 0; i < totalColCnt; i++) {
             short id = valueBuf.readShortAt(idsPos);
             int offset = valueBuf.readIntAt(offsetPos);
             idOffsetMap.put(id, offset);
@@ -216,7 +204,7 @@ public class RecordDecoder {
                 if (schema.isKey()) {
                     schema.skipKeyV2(keyBuf);
                 } else if (!valueBuf.isEnd()) {
-                    if(idOffsetMap.get((short)schema.getIndex()) != -1) { //null
+                    if (idOffsetMap.get((short)schema.getIndex()) != -1) { //null
                         schema.skipValueV2(valueBuf);
                     }
                 }
@@ -224,7 +212,7 @@ public class RecordDecoder {
                 if (schema.isKey()) {
                     record[i] = schema.decodeKeyV2(keyBuf);
                 } else if (!valueBuf.isEnd()) {
-                    if(idOffsetMap.get((short)schema.getIndex()) == -1) { //null
+                    if (idOffsetMap.get((short)schema.getIndex()) == -1) { //null
                         record[i] = null;
                     } else {
                         record[i] = schema.decodeValueV2(valueBuf);
@@ -236,23 +224,30 @@ public class RecordDecoder {
         return record;
     }
 
+    public Object[] decode(KeyValue keyValue) {
+        Buf keyBuf = new BufImpl(keyValue.getKey());
+        Buf valueBuf = new BufImpl(keyValue.getValue());
+
+        int codecVer = checkKeyValue(keyBuf, valueBuf);
+        if (codecVer <= Config.CODEC_VERSION) {
+            return decodeV1(keyValue);
+        } else {
+            return decodeV2(keyValue);
+        }
+    }
+
 
     public Object[] decode(KeyValue keyValue, int[] columnIndexes) {
         Buf keyBuf = new BufImpl(keyValue.getKey());
         Buf valueBuf = new BufImpl(keyValue.getValue());
 
         int codecVer = checkKeyValue(keyBuf, valueBuf);
-        if(codecVer <= Config.CODEC_VERSION) {
+        if (codecVer <= Config.CODEC_VERSION) {
             return decodeV1(keyValue, columnIndexes);
         } else {
             return decodeV2(keyValue, columnIndexes);
         }
     }
-    /*
-    public Object[] decode(KeyValue keyValue, int[] columnIndexes) {
-            return decodeV2(keyValue, columnIndexes);
-    }
-     */
 
     public Object[] decodeKeyPrefix(byte[] keyPrefix) {
         Buf keyPrefixBuf = new BufImpl(keyPrefix);
@@ -273,45 +268,6 @@ public class RecordDecoder {
         }
         return record;
     }
-
-    /*
-    private Object[] decodeKeyPrefixV2(byte[] keyPrefix) {
-        Buf keyPrefixBuf = new BufImpl(keyPrefix);
-
-        keyPrefixBuf.skip(1);
-
-        if (keyPrefixBuf.readLong() != id) {
-            throw new RuntimeException("Wrong Common Id");
-        }
-        Object[] record = new Object[schemas.size()];
-        for (DingoSchema<?> schema : schemas) {
-            if (keyPrefixBuf.isEnd()) {
-                break;
-            }
-            if (schema.isKey()) {
-                record[schema.getIndex()] = schema.decodeKeyPrefixV2(keyPrefixBuf);
-            }
-        }
-        return record;
-    }
-    */
-
-    /*
-    public Object[] decodeKeyPrefix(byte[] keyPrefix) {
-        Buf keyPrefixBuf = new BufImpl(keyPrefix);
-        int codecVer = checkTag(keyPrefixBuf);
-
-        if(codecVer <= Config.CODEC_VERSION) {
-            return decodeKeyPrefixV1(keyPrefix);
-        } else {
-            return decodeKeyPrefixV2(keyPrefix);
-        }
-    }*/
-    /*
-    public Object[] decodeKeyPrefix(byte[] keyPrefix) {
-            return decodeKeyPrefixV2(keyPrefix);
-    }
-    */
 
     private Object[] decodeValueV1(KeyValue keyValue, int[] columnIndexes) {
         Buf valueBuf = new BufImpl(keyValue.getValue());
@@ -351,7 +307,7 @@ public class RecordDecoder {
         //get id-offset map.
         Map<Short, Integer> idOffsetMap = new HashMap<Short, Integer>();
 
-        for(int i = 0; i < totalColCnt; i++) {
+        for (int i = 0; i < totalColCnt; i++) {
             short id = valueBuf.readShortAt(idsPos);
             int offset = valueBuf.readIntAt(offsetPos);
             idOffsetMap.put(id, offset);
@@ -368,7 +324,7 @@ public class RecordDecoder {
             }
             if (!schema.isKey()) {
                 if (Arrays.binarySearch(columnIndexes, schema.getIndex()) < 0) {
-                    if(idOffsetMap.get((short)schema.getIndex()) != -1) {
+                    if (idOffsetMap.get((short)schema.getIndex()) != -1) {
                         schema.skipValueV2(valueBuf);
                     }
                 } else {
@@ -379,22 +335,16 @@ public class RecordDecoder {
         return record;
     }
 
-
     public Object[] decodeValue(KeyValue keyValue, int[] columnIndexes) {
         Buf keyBuf = new BufImpl(keyValue.getKey());
         Buf valueBuf = new BufImpl(keyValue.getValue());
 
         int codecVer = checkKeyValue(keyBuf, valueBuf);
 
-        if(codecVer == Config.CODEC_VERSION) {
+        if (codecVer == Config.CODEC_VERSION) {
             return decodeValueV1(keyValue, columnIndexes);
         } else {
             return decodeValueV2(keyValue, columnIndexes);
         }
     }
-    /*
-    public Object[] decodeValue(KeyValue keyValue, int[] columnIndexes) {
-            return decodeValueV2(keyValue, columnIndexes);
-    }
-     */
 }

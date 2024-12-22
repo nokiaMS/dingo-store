@@ -92,16 +92,24 @@ public class LongListSchema implements DingoSchema<List<Long>> {
     }
 
     @Override
-    public void encodeKey(Buf buf, List<Long> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKey(Buf buf, List<Long> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyV2(Buf buf, List<Long> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyV2(Buf buf, List<Long> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyForUpdate(Buf buf, List<Long> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyForUpdate(Buf buf, List<Long> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public void encodeKeyForUpdateV2(Buf buf, List<Long> data) {throw new RuntimeException("Array cannot be key");}
+    public void encodeKeyForUpdateV2(Buf buf, List<Long> data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     private void internalEncodeNull(Buf buf) {
         buf.write((byte) 0);
@@ -114,25 +122,24 @@ public class LongListSchema implements DingoSchema<List<Long>> {
         buf.write((byte) 0);
     }
 
-    private void internalEncodeKey(Buf buf, Long data) {throw new RuntimeException("Array cannot be key");}
+    private void internalEncodeKey(Buf buf, Long data) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public List<Long> decodeKey(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public List<Long> decodeKey(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
-    public List<Long> decodeKeyV2(Buf buf) {throw new RuntimeException("Array cannot be key");}
+    public List<Long> decodeKeyV2(Buf buf) {
+        throw new RuntimeException("Array cannot be key");
+    }
 
     @Override
     public List<Long> decodeKeyPrefix(Buf buf) {
         throw new RuntimeException("Array cannot be key");
     }
-
-    /*
-    @Override
-    public List<Long> decodeKeyPrefixV2(Buf buf) {
-        throw new RuntimeException("Array cannot be key");
-    }
-     */
 
     @Override
     public void skipKey(Buf buf) {
@@ -149,13 +156,6 @@ public class LongListSchema implements DingoSchema<List<Long>> {
         throw new RuntimeException("Array cannot be key");
     }
 
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, List<Long> data) {
-        throw new RuntimeException("Array cannot be key");
-    }
-     */
-
     @Override
     public void encodeValue(Buf buf, List<Long> data) {
         if (allowNull) {
@@ -167,7 +167,7 @@ public class LongListSchema implements DingoSchema<List<Long>> {
                 buf.write(NOTNULL);
                 buf.writeInt(data.size());
                 for (Long value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     internalEncodeValue(buf, value);
@@ -177,7 +177,7 @@ public class LongListSchema implements DingoSchema<List<Long>> {
             buf.ensureRemainder(8 + data.size() * 8);
             buf.writeInt(data.size());
             for (Long value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 internalEncodeValue(buf, value);
@@ -198,7 +198,7 @@ public class LongListSchema implements DingoSchema<List<Long>> {
 
                 buf.writeInt(data.size());
                 for (Long value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     internalEncodeValue(buf, value);
@@ -210,7 +210,7 @@ public class LongListSchema implements DingoSchema<List<Long>> {
 
             buf.writeInt(data.size());
             for (Long value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 internalEncodeValue(buf, value);
@@ -231,7 +231,7 @@ public class LongListSchema implements DingoSchema<List<Long>> {
         buf.write((byte) data.longValue());
     }
 
-    private Long internalDecodeData (Buf buf){
+    private Long internalDecodeData( Buf buf ) {
         long l = buf.read() & 0xFF;
         for (int i = 0; i < 7; i++) {
             l <<= 8;

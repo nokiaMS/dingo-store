@@ -67,7 +67,9 @@ public class BytesSchema implements DingoSchema<byte[]> {
     }
 
     @Override
-    public int getWithNullTagLength() { return 1;}
+    public int getWithNullTagLength() {
+        return 1;
+    }
 
     @Override
     public void setAllowNull(boolean allowNull) {
@@ -115,7 +117,7 @@ public class BytesSchema implements DingoSchema<byte[]> {
                 buf.reverseWriteInt(size);
             }
         } else {
-            if(data == null) {
+            if (data == null) {
                 throw new RuntimeException("Data is not allow as null.");
             }
             buf.ensureRemainder(1);
@@ -178,7 +180,7 @@ public class BytesSchema implements DingoSchema<byte[]> {
                 buf.reverseWriteInt(internalEncodeKeyForUpdate(buf, data));
             }
         } else {
-            if(data == null) {
+            if (data == null) {
                 throw new RuntimeException("Data is not allow as null.");
             }
             buf.write(NOTNULL);
@@ -246,23 +248,13 @@ public class BytesSchema implements DingoSchema<byte[]> {
         return internalReadKeyPrefixBytes(buf);
     }
 
-    /*
-    @Override
-    public byte[] decodeKeyPrefixV2(Buf buf) {
-        if (buf.read() == NULL) {
-            return null;
-        }
-
-        return internalReadKeyPrefixBytes(buf);
-    }
-    */
-
     private byte[] internalReadKeyPrefixBytes(Buf buf) {
         int length = 0;
         do {
             length += 9;
             buf.skip(8);
-        } while(buf.read() == (byte) 255);
+        }
+        while (buf.read() == (byte) 255);
         int groupNum = length / 9;
         buf.skip(-1);
         int reminderZero = 255 - buf.read() & 0xFF;
@@ -329,28 +321,6 @@ public class BytesSchema implements DingoSchema<byte[]> {
             internalEncodeKey(buf, data);
         }
     }
-
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, byte[] data) {
-        if (allowNull) {
-            buf.ensureRemainder(1);
-            if (data == null) {
-                buf.write(NULL);
-            } else {
-                buf.write(NOTNULL);
-                internalEncodeKey(buf, data);
-            }
-        } else {
-            if(data == null) {
-                throw new RuntimeException("Data is not allow as null.");
-            }
-            buf.ensureRemainder(1);
-            buf.write(NOTNULL);
-            internalEncodeKey(buf, data);
-        }
-    }
-     */
 
     @Override
     public void encodeValue(Buf buf, byte[] data) {

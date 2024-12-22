@@ -105,28 +105,6 @@ public class FloatSchema implements DingoSchema<Float> {
         }
     }
 
-    /*
-    @Override
-    public void encodeKeyV2(Buf buf, Float data) {
-        if (allowNull) {
-            buf.ensureRemainder(getWithNullTagLength());
-            if (data == null) {
-                buf.write(NULL);
-                internalEncodeNull(buf);
-            } else {
-                buf.write(NOTNULL);
-                internalEncodeKey(buf, data);
-            }
-        } else {
-            if(data == null) {
-                throw new RuntimeException("Data is not allow as null.");
-            }
-            buf.ensureRemainder(getWithNullTagLength());
-            buf.write(NOTNULL);
-            internalEncodeKey(buf, data);
-        }
-    }
-     */
     public void encodeKeyV2(Buf buf, Float data) {
         encodeKey(buf, data);
     }
@@ -157,7 +135,7 @@ public class FloatSchema implements DingoSchema<Float> {
                 internalEncodeKey(buf, data);
             }
         } else {
-            if(data == null) {
+            if (data == null) {
                 throw new RuntimeException("Data is not allow as null.");
             }
             buf.write(NOTNULL);
@@ -213,32 +191,6 @@ public class FloatSchema implements DingoSchema<Float> {
         return Float.intBitsToFloat(in);
     }
 
-    /*
-    @Override
-    public Float decodeKeyV2(Buf buf) {
-        if (buf.read() == NULL) {
-            buf.skip(getWithNullTagLength());
-            return null;
-        }
-
-        int in = buf.read() & 0xFF;
-
-        if (in >= 0x80) {
-            in = in ^ 0x80;
-            for (int i = 0; i < 3; i++) {
-                in <<= 8;
-                in |= buf.read() & 0xFF;
-            }
-        } else {
-            in = ~in;
-            for (int i = 0; i < 3; i++) {
-                in <<= 8;
-                in |= ~buf.read() & 0xFF;
-            }
-        }
-        return Float.intBitsToFloat(in);
-    }
-    */
     public Float decodeKeyV2(Buf buf) {
         return decodeKey(buf);
     }
@@ -248,24 +200,11 @@ public class FloatSchema implements DingoSchema<Float> {
         return decodeKey(buf);
     }
 
-    /*
-    @Override
-    public Float decodeKeyPrefixV2(Buf buf) {
-        return decodeKeyV2(buf);
-    }
-     */
-
     @Override
     public void skipKey(Buf buf) {
         buf.skip(getLength());
     }
 
-    /*
-    @Override
-    public void skipKeyV2(Buf buf) {
-        buf.skip(getWithNullTagLength());
-    }
-     */
     public void skipKeyV2(Buf buf) {
         skipKey(buf);
     }
@@ -275,12 +214,6 @@ public class FloatSchema implements DingoSchema<Float> {
         encodeKey(buf, data);
     }
 
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, Float data) {
-        encodeKeyV2(buf, data);
-    }
-    */
 
     @Override
     public void encodeValue(Buf buf, Float data) {

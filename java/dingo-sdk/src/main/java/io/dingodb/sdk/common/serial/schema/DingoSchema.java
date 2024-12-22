@@ -23,6 +23,7 @@ public interface DingoSchema<T> {
     byte NULL = 0;
     byte NOTNULL = 1;
 
+    //Common interfaces for both v1 and v2.
     Type getType();
 
     void setIndex(int index);
@@ -43,30 +44,37 @@ public interface DingoSchema<T> {
 
     boolean isAllowNull();
 
+    //v1 interfaces.
     void encodeKey(Buf buf, T data);
-    void encodeKeyV2(Buf buf, T data);
 
     void encodeKeyForUpdate(Buf buf, T data);
-    void encodeKeyForUpdateV2(Buf buf, T data);
 
     T decodeKey(Buf buf);
-    T decodeKeyV2(Buf buf);
 
     T decodeKeyPrefix(Buf buf);
-    //T decodeKeyPrefixV2(Buf buf);
 
     void skipKey(Buf buf);
-    void skipKeyV2(Buf buf);
 
     void encodeKeyPrefix(Buf buf, T data);
-    //void encodeKeyPrefixV2(Buf buf, T data);
 
     void encodeValue(Buf buf, T data);
-    int encodeValueV2(Buf buf, T data);
 
     T decodeValue(Buf buf);
-    T decodeValueV2(Buf buf);
 
     void skipValue(Buf buf);
+
+    //v2 interfaces.
+    void encodeKeyV2(Buf buf, T data);
+
+    void encodeKeyForUpdateV2(Buf buf, T data);
+
+    T decodeKeyV2(Buf buf);
+
+    void skipKeyV2(Buf buf);
+
+    int encodeValueV2(Buf buf, T data);
+
+    T decodeValueV2(Buf buf);
+
     void skipValueV2(Buf buf);
 }

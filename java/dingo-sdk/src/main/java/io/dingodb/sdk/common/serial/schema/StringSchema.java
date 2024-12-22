@@ -64,7 +64,9 @@ public class StringSchema implements DingoSchema<String> {
     }
 
     @Override
-    public int getWithNullTagLength() { return 1;}
+    public int getWithNullTagLength() {
+        return 1;
+    }
 
     @Override
     public int getValueLengthV2() {
@@ -118,7 +120,7 @@ public class StringSchema implements DingoSchema<String> {
                 //buf.reverseWriteInt(size);
             }
         } else {
-            if(data == null) {
+            if (data == null) {
                 throw new RuntimeException("Data is not allow as null.");
             }
             //buf.ensureRemainder(1);
@@ -187,7 +189,7 @@ public class StringSchema implements DingoSchema<String> {
                 internalEncodeKeyForUpdate(buf, bytes);
             }
         } else {
-            if(data == null) {
+            if (data == null) {
                 throw new RuntimeException("Data is not allow as null.");
             }
             buf.write(NOTNULL);
@@ -239,7 +241,7 @@ public class StringSchema implements DingoSchema<String> {
 
     @Override
     public String decodeKeyV2(Buf buf) {
-        if(allowNull) {
+        if (allowNull) {
             if (buf.read() == NULL) {
                 //buf.reverseSkipInt();
                 return null;
@@ -248,18 +250,6 @@ public class StringSchema implements DingoSchema<String> {
 
         return new String(internalReadBytesV2(buf), StandardCharsets.UTF_8);
     }
-
-    /*
-    @Override
-    public String decodeKeyPrefix(Buf buf) {
-        if (allowNull) {
-            if (buf.read() == NULL) {
-                return null;
-            }
-        }
-        return new String(internalReadKeyPrefixBytes(buf), StandardCharsets.UTF_8);
-    }
-     */
 
     //This interface is both used by v1 and v2. We use same way to decode key prefix.
     //In the new way, we decode string value directly but not by length field.
@@ -273,23 +263,13 @@ public class StringSchema implements DingoSchema<String> {
         return new String(internalReadKeyPrefixBytes(buf), StandardCharsets.UTF_8);
     }
 
-    /*
-    @Override
-    public String decodeKeyPrefixV2(Buf buf) {
-        if (buf.read() == NULL) {
-            return null;
-        }
-
-        return new String(internalReadKeyPrefixBytes(buf), StandardCharsets.UTF_8);
-    }
-    */
-
     private byte[] internalReadKeyPrefixBytes(Buf buf) {
         int length = 0;
         do {
             length += 9;
             buf.skip(8);
-        } while(buf.read() == (byte) 255);
+        }
+        while (buf.read() == (byte) 255);
         int groupNum = length / 9;
         buf.skip(-1);
         int reminderZero = 255 - buf.read() & 0xFF;
@@ -335,44 +315,6 @@ public class StringSchema implements DingoSchema<String> {
     private byte[] internalReadBytesV2(Buf buf) {
         return internalReadKeyPrefixBytes(buf);
     }
-    /*
-    private byte[] internalReadBytesV2(Buf buf) {
-        int size = 0;
-        final int kPadGroupSize = 9;
-        final int kGroupSize = 8;
-        final int kMarker = 255;
-
-        StringBuffer data = new StringBuffer();
-
-        for(;;) {
-            if(buf.restReadableSize() < kPadGroupSize) {
-                throw new RuntimeException("Not enough buf for string key.");
-            }
-
-            int marker = buf.readAt(buf.readOffset() + kGroupSize) & 0xFF;
-            int pad_count = kMarker - marker;
-            for (int i = 0; i < kGroupSize - pad_count; ++i) {
-                data.append((char)buf.read());
-            }
-
-            size += kPadGroupSize;
-            if (pad_count != 0) {
-                for (int i = 0; i < pad_count; ++i) {
-                    if (buf.read() != 0) {
-                        throw new RuntimeException("pad should be 0 in string key.");
-                    }
-                }
-                buf.skip(1);  // skip marker
-
-                break;
-            }
-
-            buf.skip(1);;
-        }
-
-        return data.toString().getBytes();
-    }
-    */
 
     @Override
     public void skipKey(Buf buf) {
@@ -385,7 +327,7 @@ public class StringSchema implements DingoSchema<String> {
 
     @Override
     public void skipKeyV2(Buf buf) {
-        if(allowNull) {
+        if (allowNull) {
             //buf.skip(buf.reverseReadInt() + 1);
             buf.skip(1);
         }
@@ -409,30 +351,6 @@ public class StringSchema implements DingoSchema<String> {
             internalEncodeKey(buf, bytes);
         }
     }
-
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, String data) {
-        if (allowNull) {
-            buf.ensureRemainder(1);
-            if (data == null) {
-                buf.write(NULL);
-            } else {
-                buf.write(NOTNULL);
-                byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-                internalEncodeKey(buf, bytes);
-            }
-        } else {
-            if(data == null) {
-                throw new RuntimeException("Data is not allow as null.");
-            }
-            buf.ensureRemainder(1);
-            buf.write(NOTNULL);
-            byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
-            internalEncodeKey(buf, bytes);
-        }
-    }
-    */
 
     @Override
     public void encodeValue(Buf buf, String data) {

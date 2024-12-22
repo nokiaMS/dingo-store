@@ -1,6 +1,24 @@
+/*
+ * Copyright 2021 DataCanvas
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.dingodb.sdk.common.serial.schema;
 
 import io.dingodb.sdk.common.serial.Buf;
+import io.dingodb.sdk.common.serial.schema.DingoSchema;
+import io.dingodb.sdk.common.serial.schema.Type;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,6 +96,7 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
     public void encodeKey(Buf buf, List<Boolean> data) {
         throw new RuntimeException("Array cannot be key");
     }
+
     public void encodeKeyV2(Buf buf, List<Boolean> data) {
         throw new RuntimeException("Array cannot be key");
     }
@@ -107,13 +126,6 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
         throw new RuntimeException("Array cannot be key");
     }
 
-    /*
-    @Override
-    public List<Boolean> decodeKeyPrefixV2(Buf buf) {
-        throw new RuntimeException("Array cannot be key");
-    }
-    */
-
     @Override
     public void skipKey(Buf buf) {
         throw new RuntimeException("Array cannot be key");
@@ -129,19 +141,8 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
         throw new RuntimeException("Array cannot be key");
     }
 
-    /*
-    @Override
-    public void encodeKeyPrefixV2(Buf buf, List<Boolean> data) {
-        throw new RuntimeException("Array cannot be key");
-    }
-
-    private void internalEncodeNull(Buf buf) {
-        buf.write((byte) 0);
-    }
-    */
-
-    private void internalEncodeData(Buf buf, Boolean b) {
-        if (b) {
+    private void internalEncodeData(Buf buf, Boolean boolVal) {
+        if (boolVal) {
             buf.write((byte) 1);
         } else {
             buf.write((byte) 0);
@@ -159,7 +160,7 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
                 buf.write(NOTNULL);
                 buf.writeInt(data.size());
                 for (Boolean value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     internalEncodeData(buf, value);
@@ -169,7 +170,7 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
             buf.ensureRemainder(4 + data.size());
             buf.writeInt(data.size());
             for (Boolean value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 internalEncodeData(buf, value);
@@ -190,7 +191,7 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
 
                 buf.writeInt(data.size());
                 for (Boolean value: data) {
-                    if(value == null) {
+                    if (value == null) {
                         throw new IllegalArgumentException("Array type sub-elements do not support null values");
                     }
                     internalEncodeData(buf, value);
@@ -202,7 +203,7 @@ public class BooleanListSchema implements DingoSchema<List<Boolean>> {
 
             buf.writeInt(data.size());
             for (Boolean value: data) {
-                if(value == null) {
+                if (value == null) {
                     throw new IllegalArgumentException("Array type sub-elements do not support null values");
                 }
                 internalEncodeData(buf, value);

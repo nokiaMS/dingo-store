@@ -65,7 +65,7 @@ public class RecordEncoder {
                 int index = schema.getIndex();
                 Object column = record[index];
 
-                if(column == null) {
+                if (column == null) {
                     cntNullCols++;
 
                     //Write id.
@@ -100,7 +100,7 @@ public class RecordEncoder {
 
     private int getValueColumnCount() {
         int count = 0;
-        for( DingoSchema schema : schemas ) {
+        for ( DingoSchema schema : schemas ) {
             if (!schema.isKey()) {
                 count++;
             }
@@ -114,7 +114,7 @@ public class RecordEncoder {
         this.id = id;
         this.codecVersion = Config.CODEC_VERSION_V2;
 
-        if(this.codecVersion == Config.CODEC_VERSION_V2) {
+        if (this.codecVersion == Config.CODEC_VERSION_V2) {
             int[] size = Utils.getApproPerRecordSizeV2(schemas);
             this.keyBufSize = size[0];
             this.valueBufSize = size[1];
@@ -138,7 +138,7 @@ public class RecordEncoder {
         this.id = id;
         this.codecVersion = codecVersion;
 
-        if(this.codecVersion == Config.CODEC_VERSION_V2) {
+        if (this.codecVersion == Config.CODEC_VERSION_V2) {
             int[] size = Utils.getApproPerRecordSizeV2(schemas);
             this.keyBufSize = size[0];
             this.valueBufSize = size[1];
@@ -220,7 +220,7 @@ public class RecordEncoder {
     }
 
     public byte[] encodeKey(Object[] record) {
-        if( this.codecVersion == Config.CODEC_VERSION) {
+        if ( this.codecVersion == Config.CODEC_VERSION) {
             return encodeKeyV1(record);
         } else {
             return encodeKeyV2(record);
@@ -228,7 +228,7 @@ public class RecordEncoder {
     }
 
     public byte[] encodeValue(Object[] record) {
-        if( this.codecVersion == Config.CODEC_VERSION) {
+        if ( this.codecVersion == Config.CODEC_VERSION) {
             return encodeValueV1(record);
         } else {
             return encodeValueV2(record);
@@ -265,33 +265,6 @@ public class RecordEncoder {
         }
         return keyBuf.getBytes();
     }
-
-    /*
-    private byte[] encodeKeyPrefixV2(Object[] record, int columnCount) {
-        Buf keyBuf = new BufImpl(keyBufSize);
-        encodePrefix(keyBuf);
-        for (DingoSchema schema : schemas) {
-            if (schema.isKey()) {
-                if (columnCount-- > 0) {
-                    schema.encodeKeyPrefixV2(keyBuf, record[schema.getIndex()]);
-                } else {
-                    break;
-                }
-            }
-        }
-        return keyBuf.getBytes();
-    }
-    */
-
-    /*
-    public byte[] encodeKeyPrefix(Object[] record, int columnCount) {
-        if( this.codecVersion == Config.CODEC_VERSION) {
-            return encodeKeyPrefixV1(record, columnCount);
-        } else {
-            return encodeKeyPrefixV2(record, columnCount);
-        }
-    }
-    */
 
     public byte[] updateValueByRecord(byte[] buf, Object[] record, int[] columnIndexes) {
         Buf valueBuf = new BufImpl(buf);
