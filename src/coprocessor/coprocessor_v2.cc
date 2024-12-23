@@ -575,7 +575,6 @@ butil::Status CoprocessorV2::DoRelExprCoreWrapper(const std::string& key, const 
     int ret = 0;
     try {
       // decode some column. not decode all
-      DINGO_LOG(ERROR) << fmt::format("====>guoxu CoprocessorV2::DoRelExprCoreWrapper");;
       ret = original_record_decoder_->Decode(key, value, selection_column_indexes_, original_record);
     } catch (const std::exception& my_exception) {
       std::string error_message = fmt::format("serial::Decode failed exception : {}", my_exception.what());

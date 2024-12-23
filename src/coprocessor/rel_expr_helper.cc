@@ -21,6 +21,7 @@
 #include "fmt/core.h"
 #include "proto/error.pb.h"
 #include "serial/schema/base_schema.h"
+#include "serial/record/V2/common.h"
 
 namespace dingodb {
 
@@ -278,14 +279,11 @@ butil::Status RelExprHelper::TransToOperandV2(
       try {
         if (column.has_value()) {
           auto col_value = std::make_shared<std::string>(
-              //std::move(std::any_cast<std::string>(column)));
               std::any_cast<std::string>(column));
-          operand_ptr->emplace_back(
-              ToOperandV2<std::shared_ptr<std::string>>(std::any(col_value)));
+          operand_ptr->emplace_back(col_value);
         } else {
           operand_ptr->emplace_back(nullptr);
         }
-
       } catch (const std::bad_any_cast& bad) {
         std::string s = fmt::format(
             "{}  any_cast std::optional<std::shared_ptr<std::string>> failed",
@@ -299,11 +297,8 @@ butil::Status RelExprHelper::TransToOperandV2(
       try {
         if (column.has_value()) {
           auto col_value = std::make_shared<std::vector<bool>>(
-              //std::move(std::any_cast<std::vector<bool>>(column)));
               std::any_cast<std::vector<bool>>(column));
-          operand_ptr->emplace_back(
-              ToOperandV2<std::shared_ptr<std::vector<bool>>>(
-                  std::any(col_value)));
+          operand_ptr->emplace_back(col_value);
         } else {
           operand_ptr->emplace_back(nullptr);
         }
@@ -319,11 +314,8 @@ butil::Status RelExprHelper::TransToOperandV2(
       try {
         if (column.has_value()) {
           auto col_value = std::make_shared<std::vector<int32_t>>(
-              //std::move(std::any_cast<std::vector<int32_t>>(column)));
               std::any_cast<std::vector<int32_t>>(column));
-          operand_ptr->emplace_back(
-              ToOperandV2<std::shared_ptr<std::vector<int32_t>>>(
-                  std::any(col_value)));
+          operand_ptr->emplace_back(col_value);
         } else {
           operand_ptr->emplace_back(nullptr);
         }
@@ -339,11 +331,8 @@ butil::Status RelExprHelper::TransToOperandV2(
       try {
         if (column.has_value()) {
           auto col_value = std::make_shared<std::vector<float>>(
-              //std::move(std::any_cast<std::vector<float>>(column)));
               std::any_cast<std::vector<float>>(column));
-          operand_ptr->emplace_back(
-              ToOperandV2<std::shared_ptr<std::vector<float>>>(
-                  std::any(col_value)));
+          operand_ptr->emplace_back(col_value);
         } else {
           operand_ptr->emplace_back(nullptr);
         }
@@ -359,11 +348,8 @@ butil::Status RelExprHelper::TransToOperandV2(
       try {
         if (column.has_value()) {
           auto col_value = std::make_shared<std::vector<int64_t>>(
-              //std::move(std::any_cast<std::vector<int64_t>>(column)));
               std::any_cast<std::vector<int64_t>>(column));
-          operand_ptr->emplace_back(
-              ToOperandV2<std::shared_ptr<std::vector<int64_t>>>(
-                  std::any(col_value)));
+          operand_ptr->emplace_back(col_value);
         } else {
           operand_ptr->emplace_back(nullptr);
         }
@@ -379,11 +365,8 @@ butil::Status RelExprHelper::TransToOperandV2(
       try {
         if (column.has_value()) {
           auto col_value = std::make_shared<std::vector<double>>(
-              //std::move(std::any_cast<std::vector<double>>(column)));
               std::any_cast<std::vector<double>>(column));
-          operand_ptr->emplace_back(
-              ToOperandV2<std::shared_ptr<std::vector<double>>>(
-                  std::any(col_value)));
+          operand_ptr->emplace_back(col_value);
         } else {
           operand_ptr->emplace_back(nullptr);
         }
@@ -399,11 +382,8 @@ butil::Status RelExprHelper::TransToOperandV2(
       try {
         if (column.has_value()) {
           auto col_value = std::make_shared<std::vector<std::string>>(
-              //std::move(std::any_cast<std::vector<std::string>>(column)));
               std::any_cast<std::vector<std::string>>(column));
-          operand_ptr->emplace_back(
-              ToOperandV2<std::shared_ptr<std::vector<std::string>>>(
-                  std::any(col_value)));
+          operand_ptr->emplace_back(col_value);
         } else {
           operand_ptr->emplace_back(nullptr);
         }
@@ -820,7 +800,7 @@ butil::Status RelExprHelper::TransToOperandWrapper(
   butil::Status status;
   size_t i = 0;
 
-  if (codec_version <= 0x01) {
+  if (codec_version <= dingodb::serialV2::CODEC_VERSION_V1) {
     for (const auto& record : original_record) {
       BaseSchema::Type type =
           (*original_serial_schemas)[selection_column_indexes[i++]]->GetType();
@@ -857,7 +837,7 @@ butil::Status RelExprHelper::TransFromOperandWrapper(
 
   size_t i = 0;
 
-  if (codec_version <= 0x01) {  // codec v1 for 0 or 1.
+  if (codec_version <= dingodb::serialV2::CODEC_VERSION_V1) {  // codec v1 for 0 or 1.
     for (const auto& tuple : *operand_ptr) {
       BaseSchema::Type type =
           (*result_serial_schemas)[result_column_indexes[i]]->GetType();
