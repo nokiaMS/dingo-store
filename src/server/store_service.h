@@ -96,6 +96,8 @@ class StoreServiceImpl : public pb::store::StoreService {
               pb::store::TxnGetResponse* response, google::protobuf::Closure* done) override;
   void TxnScan(google::protobuf::RpcController* controller, const pb::store::TxnScanRequest* request,
                pb::store::TxnScanResponse* response, google::protobuf::Closure* done) override;
+  void TxnCoprocessor(google::protobuf::RpcController* controller, const pb::store::TxnCoprocessorRequest* request,
+               pb::store::TxnCoprocessorResponse* response, google::protobuf::Closure* done) override;
   void TxnBatchGet(google::protobuf::RpcController* controller, const pb::store::TxnBatchGetRequest* request,
                    pb::store::TxnBatchGetResponse* response, google::protobuf::Closure* done) override;
   void TxnScanLock(google::protobuf::RpcController* controller, const pb::store::TxnScanLockRequest* request,

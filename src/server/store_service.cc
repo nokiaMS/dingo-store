@@ -1783,6 +1783,90 @@ static butil::Status ValidateTxnScanRequest(const pb::store::TxnScanRequest* req
   return butil::Status();
 }
 
+void DoCopAggCountWithoutFitlerProject(StoragePtr storage, google::protobuf::RpcController* controller,
+                      const dingodb::pb::store::TxnCoprocessorRequest* copRequest, dingodb::pb::store::TxnCoprocessorResponse* copResponse,
+                      TrackClosure* done) {
+  const dingodb::pb::store::TxnScanRequest* request = &copRequest->txnscanrequest();
+  dingodb::pb::store::TxnScanResponse* response = copResponse->mutable_txnscanresponse();
+
+  brpc::Controller* cntl = (brpc::Controller*)controller;
+  brpc::ClosureGuard done_guard(done);
+  auto tracker = done->Tracker();
+  tracker->SetServiceQueueWaitTime();
+
+  auto region = done->GetRegion();
+  int64_t region_id = request->context().region_id();
+  region->SetTxnAppliedMaxTs(request->start_ts());
+  auto uniform_range = Helper::TransformRangeWithOptions(request->range());
+  butil::Status status = ValidateTxnScanRequest(request, region, uniform_range);
+  if (BAIDU_UNLIKELY(!status.ok())) {
+    if (pb::error::ERANGE_INVALID != static_cast<pb::error::Errno>(status.error_code())) {
+      ServiceHelper::SetError(response->mutable_error(), status.error_code(), status.error_str());
+      ServiceHelper::GetStoreRegionInfo(region, response->mutable_error());
+    }
+    return;
+  }
+
+  std::shared_ptr<Context> ctx = std::make_shared<Context>();
+  ctx->SetRegionId(region_id);
+  ctx->SetTracker(tracker);
+  ctx->SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(request->context().region_epoch());
+  ctx->SetIsolationLevel(request->context().isolation_level());
+  ctx->SetRawEngineType(region->GetRawEngineType());
+  ctx->SetStoreEngineType(region->GetStoreEngineType());
+
+  std::set<int64_t> resolved_locks;
+  for (const auto& lock : request->context().resolved_locks()) {
+    resolved_locks.insert(lock);
+  }
+
+  pb::store::TxnResultInfo txn_result_info;
+  std::vector<pb::common::KeyValue> kvs;
+  bool has_more = false;
+  std::string end_key{};
+
+  auto correction_range = Helper::IntersectRange(region->Range(false), uniform_range);
+  status = storage->TxnScan(ctx, request->stream_meta(), request->start_ts(), correction_range, request->limit(),
+                            request->key_only(), request->is_reverse(), resolved_locks, txn_result_info, kvs, has_more,
+                            end_key, !request->has_coprocessor(), request->coprocessor());
+
+  if (BAIDU_UNLIKELY(!status.ok())) {
+    ServiceHelper::SetError(response->mutable_error(), status.error_code(), status.error_str());
+    return;
+  }
+
+  if (!kvs.empty()) {
+    Helper::VectorToPbRepeated(kvs, response->mutable_kvs());
+  }
+
+  if (txn_result_info.ByteSizeLong() > 0) {
+    *response->mutable_txn_result() = txn_result_info;
+  }
+  response->set_end_key(end_key);
+  response->set_has_more(has_more);
+
+  auto stream = ctx->Stream();
+  CHECK(stream != nullptr) << fmt::format("[region({})] stream is nullptr.", region_id);
+
+  auto* mut_stream_meta = response->mutable_stream_meta();
+  mut_stream_meta->set_stream_id(stream->StreamId());
+  mut_stream_meta->set_has_more(has_more);
+
+  tracker->SetReadStoreTime();
+}
+
+void DoTxnCoprocessor(StoragePtr storage, google::protobuf::RpcController* controller,
+                      const dingodb::pb::store::TxnCoprocessorRequest* request, dingodb::pb::store::TxnCoprocessorResponse* response,
+                      TrackClosure* done) {
+  dingodb::pb::store::TxnCoprocessorType pushdownType = request->type();
+  switch (pushdownType) {
+    case ::dingodb::pb::store::COP_AGG_COUNT_WITHOUT_FILTER_PROJECT: {
+      DoCopAggCountWithoutFitlerProject(storage, controller, request, response, done);
+    }
+  }
+}
+
 void DoTxnScan(StoragePtr storage, google::protobuf::RpcController* controller,
                const dingodb::pb::store::TxnScanRequest* request, dingodb::pb::store::TxnScanResponse* response,
                TrackClosure* done) {
@@ -1870,6 +1954,29 @@ void StoreServiceImpl::TxnScan(google::protobuf::RpcController* controller, cons
   if (BAIDU_UNLIKELY(!ret)) {
     brpc::ClosureGuard done_guard(svr_done);
     ServiceHelper::SetError(response->mutable_error(), pb::error::EREQUEST_FULL,
+                            "WorkerSet queue is full, please wait and retry");
+  }
+}
+
+void StoreServiceImpl::TxnCoprocessor(google::protobuf::RpcController* controller,
+                    const pb::store::TxnCoprocessorRequest* request,
+                    pb::store::TxnCoprocessorResponse* response,
+                    google::protobuf::Closure* done) {
+  auto* svr_done = new ServiceClosure(__func__, done, request, response);
+
+  if (BAIDU_UNLIKELY(svr_done->GetRegion() == nullptr)) {
+    brpc::ClosureGuard done_guard(svr_done);
+    return;
+  }
+
+  // Run in queue.
+  auto task = std::make_shared<ServiceTask>([this, controller, request, response, svr_done]() {
+    DoTxnCoprocessor(storage_, controller, request, response, svr_done);
+  });
+  bool ret = read_worker_set_->ExecuteRR(task);
+  if (BAIDU_UNLIKELY(!ret)) {
+    brpc::ClosureGuard done_guard(svr_done);
+    ServiceHelper::SetError(response->mutable_txnscanresponse()->mutable_error(), pb::error::EREQUEST_FULL,
                             "WorkerSet queue is full, please wait and retry");
   }
 }
