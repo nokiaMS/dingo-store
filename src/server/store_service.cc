@@ -1747,8 +1747,18 @@ void StoreServiceImpl::TxnGet(google::protobuf::RpcController* controller, const
   }
 }
 
+static butil::Status ValidateTxnCopRequestEpoch(const pb::store::TxnCoprocessorRequest* request,
+                                                        store::RegionPtr region) {
+  auto status = ServiceHelper::ValidateRegionEpoch(request->context().region_epoch(), region);
+  if (!status.ok()) {
+    return status;
+  }
+
+  return butil::Status();
+}
+
 static butil::Status ValidateTxnScanRequest(const pb::store::TxnScanRequest* request, store::RegionPtr region,
-                                            const pb::common::Range& req_range) {
+                                            const pb::common::Range& req_range, bool withReginEpoch) {
   if (request->limit() <= 0 && request->stream_meta().limit() <= 0) {
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "param limit is invalid");
   }
@@ -1760,9 +1770,13 @@ static butil::Status ValidateTxnScanRequest(const pb::store::TxnScanRequest* req
   if (request->start_ts() < 0) {
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "param start_ts is invalid");
   }
-  auto status = ServiceHelper::ValidateRegionEpoch(request->context().region_epoch(), region);
-  if (!status.ok()) {
-    return status;
+
+  butil::Status status;
+  if(withReginEpoch) {
+    status = ServiceHelper::ValidateRegionEpoch(request->context().region_epoch(), region);
+    if (!status.ok()) {
+      return status;
+    }
   }
 
   status = ServiceHelper::ValidateRange(req_range);
@@ -1795,10 +1809,21 @@ void DoCopAggCountWithoutFitlerProject(StoragePtr storage, google::protobuf::Rpc
   tracker->SetServiceQueueWaitTime();
 
   auto region = done->GetRegion();
-  int64_t region_id = request->context().region_id();
+  int64_t region_id = copRequest->context().region_id();
   region->SetTxnAppliedMaxTs(request->start_ts());
   auto uniform_range = Helper::TransformRangeWithOptions(request->range());
-  butil::Status status = ValidateTxnScanRequest(request, region, uniform_range);
+
+  //butil::Status status = ValidateTxnScanRequest(request, region, uniform_range);
+  butil::Status status = ValidateTxnCopRequestEpoch(copRequest, region);
+  if (BAIDU_UNLIKELY(!status.ok())) {
+    if (pb::error::ERANGE_INVALID != static_cast<pb::error::Errno>(status.error_code())) {
+      ServiceHelper::SetError(response->mutable_error(), status.error_code(), status.error_str());
+      ServiceHelper::GetStoreRegionInfo(region, response->mutable_error());
+    }
+    return;
+  }
+
+  status = ValidateTxnScanRequest(request, region, uniform_range, false);
   if (BAIDU_UNLIKELY(!status.ok())) {
     if (pb::error::ERANGE_INVALID != static_cast<pb::error::Errno>(status.error_code())) {
       ServiceHelper::SetError(response->mutable_error(), status.error_code(), status.error_str());
@@ -1811,13 +1836,13 @@ void DoCopAggCountWithoutFitlerProject(StoragePtr storage, google::protobuf::Rpc
   ctx->SetRegionId(region_id);
   ctx->SetTracker(tracker);
   ctx->SetCfName(Constant::kStoreDataCF);
-  ctx->SetRegionEpoch(request->context().region_epoch());
-  ctx->SetIsolationLevel(request->context().isolation_level());
+  ctx->SetRegionEpoch(copRequest->context().region_epoch());
+  ctx->SetIsolationLevel(copRequest->context().isolation_level());
   ctx->SetRawEngineType(region->GetRawEngineType());
   ctx->SetStoreEngineType(region->GetStoreEngineType());
 
   std::set<int64_t> resolved_locks;
-  for (const auto& lock : request->context().resolved_locks()) {
+  for (const auto& lock : copRequest->context().resolved_locks()) {
     resolved_locks.insert(lock);
   }
 
@@ -1879,7 +1904,7 @@ void DoTxnScan(StoragePtr storage, google::protobuf::RpcController* controller,
   int64_t region_id = request->context().region_id();
   region->SetTxnAppliedMaxTs(request->start_ts());
   auto uniform_range = Helper::TransformRangeWithOptions(request->range());
-  butil::Status status = ValidateTxnScanRequest(request, region, uniform_range);
+  butil::Status status = ValidateTxnScanRequest(request, region, uniform_range, true);
   if (BAIDU_UNLIKELY(!status.ok())) {
     if (pb::error::ERANGE_INVALID != static_cast<pb::error::Errno>(status.error_code())) {
       ServiceHelper::SetError(response->mutable_error(), status.error_code(), status.error_str());
