@@ -705,6 +705,11 @@ butil::Status CoprocessorV2::GetKvFromExpr(const std::vector<std::any>& record, 
   return butil::Status();
 }
 
+butil::Status CoprocessorV2::GetResultFromRecord(const std::vector<std::any>& record, bool* has_result_kv,
+                                           pb::common::KeyValue* result_kv) {
+  return GetKvFromExpr(record, has_result_kv, result_kv);
+}
+
 void CoprocessorV2::GetOriginalColumnIndexes() {
   original_column_indexes_.resize(original_serial_schemas_->size(), -1);
   int i = 0;

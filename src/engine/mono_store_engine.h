@@ -185,6 +185,11 @@ class MonoStoreEngine : public Engine {
                           bool disable_coprocessor, const pb::common::CoprocessorV2& coprocessor,
                           pb::store::TxnResultInfo& txn_result_info, std::vector<pb::common::KeyValue>& kvs,
                           bool& has_more, std::string& end_scan_key) override;
+    butil::Status TxnCopAggCount(std::shared_ptr<Context> ctx, int64_t start_ts, const pb::common::Range& range, int64_t limit,
+                          bool key_only, bool is_reverse, const std::set<int64_t>& resolved_locks,
+                          bool disable_coprocessor, const pb::common::CoprocessorV2& coprocessor,
+                          pb::store::TxnResultInfo& txn_result_info, std::vector<pb::common::KeyValue>& kvs,
+                          bool& has_more, std::string& end_scan_key) override;
     butil::Status TxnScanLock(std::shared_ptr<Context> ctx, int64_t min_lock_ts, int64_t max_lock_ts,
                               const pb::common::Range& range, int64_t limit,
                               std::vector<pb::store::LockInfo>& lock_infos, bool& has_more,

@@ -1797,7 +1797,7 @@ static butil::Status ValidateTxnScanRequest(const pb::store::TxnScanRequest* req
   return butil::Status();
 }
 
-void DoCopAggCountWithoutFitlerProject(StoragePtr storage, google::protobuf::RpcController* controller,
+void DoCopAggCount(StoragePtr storage, google::protobuf::RpcController* controller,
                       const dingodb::pb::store::TxnCoprocessorRequest* copRequest, dingodb::pb::store::TxnCoprocessorResponse* copResponse,
                       TrackClosure* done) {
   const dingodb::pb::store::TxnScanRequest* request = &copRequest->txnscanrequest();
@@ -1852,7 +1852,7 @@ void DoCopAggCountWithoutFitlerProject(StoragePtr storage, google::protobuf::Rpc
   std::string end_key{};
 
   auto correction_range = Helper::IntersectRange(region->Range(false), uniform_range);
-  status = storage->TxnScan(ctx, request->stream_meta(), request->start_ts(), correction_range, request->limit(),
+  status = storage->TxnCopAggCount(ctx, request->stream_meta(), request->start_ts(), correction_range, request->limit(),
                             request->key_only(), request->is_reverse(), resolved_locks, txn_result_info, kvs, has_more,
                             end_key, !request->has_coprocessor(), request->coprocessor());
 
@@ -1887,7 +1887,7 @@ void DoTxnCoprocessor(StoragePtr storage, google::protobuf::RpcController* contr
   dingodb::pb::store::TxnCoprocessorType pushdownType = request->type();
   switch (pushdownType) {
     case ::dingodb::pb::store::COP_AGG_COUNT_WITHOUT_FILTER_PROJECT: {
-      DoCopAggCountWithoutFitlerProject(storage, controller, request, response, done);
+      DoCopAggCount(storage, controller, request, response, done);
     }
   }
 }

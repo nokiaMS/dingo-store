@@ -147,6 +147,12 @@ class TxnEngineHelper {
                             const pb::common::CoprocessorV2 &coprocessor, pb::store::TxnResultInfo &txn_result_info,
                             std::vector<pb::common::KeyValue> &kvs, bool &has_more, std::string &end_scan_key);
 
+  static butil::Status CopAggCount(StreamPtr stream, RawEnginePtr raw_engine, const pb::store::IsolationLevel &isolation_level,
+                            int64_t start_ts, const pb::common::Range &range, int64_t limit, bool key_only,
+                            bool is_reverse, const std::set<int64_t> &resolved_locks, bool disable_coprocessor,
+                            const pb::common::CoprocessorV2 &coprocessor, pb::store::TxnResultInfo &txn_result_info,
+                            std::vector<pb::common::KeyValue> &kvs, bool &has_more, std::string &end_scan_key);
+
   // txn write functions
   static butil::Status DoTxnCommit(RawEnginePtr raw_engine, std::shared_ptr<Engine> raft_engine,
                                    std::shared_ptr<Context> ctx, store::RegionPtr region,
