@@ -704,6 +704,12 @@ void CoprocessorV2::GetResultColumnIndexes() {
   }
 }
 
+butil::Status CoprocessorV2::GetResultFromRecord(const std::vector<std::any>& record,
+                                                 bool* has_result_kv,
+                                                 pb::common::KeyValue* result_kv) {
+  return GetKvFromExpr(record, has_result_kv, result_kv);
+}
+
 void CoprocessorV2::ShowOriginalColumnIndexes() {
   int i = 0;
   std::string s;

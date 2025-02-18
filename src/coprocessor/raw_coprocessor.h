@@ -20,6 +20,7 @@
 #include <variant>
 #include <vector>
 
+#include "proto/common.pb.h"
 #include "butil/status.h"
 #include "engine/iterator.h"
 #include "engine/txn_engine_helper.h"
@@ -58,6 +59,10 @@ class RawCoprocessor {
   virtual butil::Status Filter(const std::string& key, const std::string& value, bool& is_reserved);  // NOLINT
 
   virtual butil::Status Filter(const pb::common::VectorScalardata& scalar_data, bool& is_reserved);  // NOLINT
+
+  virtual butil::Status GetResultFromRecord(const std::vector<std::any>& record,
+      bool* has_result_kv,
+      pb::common::KeyValue* result_kv); // NOLINT
 
   virtual void Close();
 };

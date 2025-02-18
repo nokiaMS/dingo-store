@@ -67,6 +67,10 @@ class CoprocessorV2 : public RawCoprocessor {
 
   butil::Status Filter(const pb::common::VectorScalardata& scalar_data, bool& is_reserved) override;  // NOLINT
 
+  butil::Status GetResultFromRecord(const std::vector<std::any>& record,
+      bool* has_result_kv,
+      pb::common::KeyValue* result_kv) override; // NOLINT
+
   void Close() override;
 
  protected:

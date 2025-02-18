@@ -55,6 +55,14 @@ butil::Status RawCoprocessor::Filter(const pb::common::VectorScalardata& /*scala
 
   return status;
 }
+
+butil::Status RawCoprocessor::GetResultFromRecord(const std::vector<std::any>& record,
+                                  bool* has_result_kv,
+                                  pb::common::KeyValue* result_kv) {
+  butil::Status status(pb::error::ENOT_SUPPORT, "Not Support");
+  return status;
+}
+
 void RawCoprocessor::Close() {}
 
 }  // namespace dingodb
