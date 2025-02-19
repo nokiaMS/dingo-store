@@ -1748,7 +1748,7 @@ void StoreServiceImpl::TxnGet(google::protobuf::RpcController* controller, const
 }
 
 static butil::Status ValidateTxnScanRequest(const pb::store::TxnScanRequest* request, store::RegionPtr region,
-                                            const pb::common::Range& req_range) {
+                                            const pb::common::Range& req_range, bool withReginEpoch) {
   if (request->limit() <= 0 && request->stream_meta().limit() <= 0) {
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "param limit is invalid");
   }
@@ -1760,9 +1760,13 @@ static butil::Status ValidateTxnScanRequest(const pb::store::TxnScanRequest* req
   if (request->start_ts() < 0) {
     return butil::Status(pb::error::EILLEGAL_PARAMTETERS, "param start_ts is invalid");
   }
-  auto status = ServiceHelper::ValidateRegionEpoch(request->context().region_epoch(), region);
-  if (!status.ok()) {
-    return status;
+
+  butil::Status status;
+  if(withReginEpoch) {
+    status = ServiceHelper::ValidateRegionEpoch(request->context().region_epoch(), region);
+    if (!status.ok()) {
+      return status;
+    }
   }
 
   status = ServiceHelper::ValidateRange(req_range);
@@ -1795,7 +1799,7 @@ void DoTxnScan(StoragePtr storage, google::protobuf::RpcController* controller,
   int64_t region_id = request->context().region_id();
   region->SetTxnAppliedMaxTs(request->start_ts());
   auto uniform_range = Helper::TransformRangeWithOptions(request->range());
-  butil::Status status = ValidateTxnScanRequest(request, region, uniform_range);
+  butil::Status status = ValidateTxnScanRequest(request, region, uniform_range, true);
   if (BAIDU_UNLIKELY(!status.ok())) {
     if (pb::error::ERANGE_INVALID != static_cast<pb::error::Errno>(status.error_code())) {
       ServiceHelper::SetError(response->mutable_error(), status.error_code(), status.error_str());
@@ -1933,6 +1937,156 @@ static butil::Status ValidateTxnPessimisticLockRequest(const dingodb::pb::store:
   }
 
   return butil::Status();
+}
+
+static butil::Status ValidateTxnCopRequestEpoch(const pb::store::TxnCoprocessorRequest* request,
+                                                        store::RegionPtr region) {
+  auto status = ServiceHelper::ValidateRegionEpoch(request->context().region_epoch(), region);
+  if (!status.ok()) {
+    return status;
+  }
+
+  return butil::Status();
+}
+
+void DoCopAggCount(StoragePtr storage,
+                   google::protobuf::RpcController* controller,
+                   const dingodb::pb::store::TxnCoprocessorRequest* copRequest,
+                   dingodb::pb::store::TxnCoprocessorResponse* copResponse,
+                   TrackClosure* done) {
+  const dingodb::pb::store::TxnScanRequest* request = &copRequest->txn_scan_request();
+  dingodb::pb::store::TxnScanResponse* response = copResponse->mutable_txn_scan_response();
+
+  brpc::Controller* cntl = (brpc::Controller*)controller;
+  brpc::ClosureGuard done_guard(done);
+  auto tracker = done->Tracker();
+  tracker->SetServiceQueueWaitTime();
+
+  auto region = done->GetRegion();
+  int64_t region_id = copRequest->context().region_id();
+  region->SetTxnAppliedMaxTs(request->start_ts());
+  auto uniform_range = Helper::TransformRangeWithOptions(request->range());
+
+  //butil::Status status = ValidateTxnScanRequest(request, region, uniform_range);
+  butil::Status status = ValidateTxnCopRequestEpoch(copRequest, region);
+  if (BAIDU_UNLIKELY(!status.ok())) {
+    if (pb::error::ERANGE_INVALID != static_cast<pb::error::Errno>(status.error_code())) {
+      ServiceHelper::SetError(response->mutable_error(), status.error_code(), status.error_str());
+      ServiceHelper::GetStoreRegionInfo(region, response->mutable_error());
+    }
+    return;
+  }
+
+  status = ValidateTxnScanRequest(request, region, uniform_range, false);
+  if (BAIDU_UNLIKELY(!status.ok())) {
+    if (pb::error::ERANGE_INVALID != static_cast<pb::error::Errno>(status.error_code())) {
+      ServiceHelper::SetError(response->mutable_error(), status.error_code(), status.error_str());
+      ServiceHelper::GetStoreRegionInfo(region, response->mutable_error());
+    }
+    return;
+  }
+
+  std::shared_ptr<Context> ctx = std::make_shared<Context>();
+  ctx->SetRegionId(region_id);
+  ctx->SetTracker(tracker);
+  ctx->SetCfName(Constant::kStoreDataCF);
+  ctx->SetRegionEpoch(copRequest->context().region_epoch());
+  ctx->SetIsolationLevel(copRequest->context().isolation_level());
+  ctx->SetRawEngineType(region->GetRawEngineType());
+  ctx->SetStoreEngineType(region->GetStoreEngineType());
+
+  std::set<int64_t> resolved_locks;
+  for (const auto& lock : copRequest->context().resolved_locks()) {
+    resolved_locks.insert(lock);
+  }
+
+  pb::store::TxnResultInfo txn_result_info;
+  std::vector<pb::common::KeyValue> kvs;
+  bool has_more = false;
+  std::string end_key{};
+
+  auto correction_range = Helper::IntersectRange(region->Range(false), uniform_range);
+  status = storage->TxnCopAggCount(ctx, request->stream_meta(), request->start_ts(), correction_range, request->limit(),
+                            request->key_only(), request->is_reverse(), resolved_locks, txn_result_info, kvs, has_more,
+                            end_key, !request->has_coprocessor(), request->coprocessor());
+
+  if (BAIDU_UNLIKELY(!status.ok())) {
+    ServiceHelper::SetError(response->mutable_error(), status.error_code(), status.error_str());
+    return;
+  }
+
+  if (!kvs.empty()) {
+    Helper::VectorToPbRepeated(kvs, response->mutable_kvs());
+  }
+
+  if (txn_result_info.ByteSizeLong() > 0) {
+    *response->mutable_txn_result() = txn_result_info;
+  }
+  response->set_end_key(end_key);
+  response->set_has_more(has_more);
+
+  auto stream = ctx->Stream();
+  CHECK(stream != nullptr) << fmt::format("[region({})] stream is nullptr.", region_id);
+
+  auto* mut_stream_meta = response->mutable_stream_meta();
+  mut_stream_meta->set_stream_id(stream->StreamId());
+  mut_stream_meta->set_has_more(has_more);
+
+  tracker->SetReadStoreTime();
+}
+
+void DoCopDefault(dingodb::pb::store::TxnCoprocessorResponse* copResponse, TrackClosure* done) {
+  brpc::ClosureGuard done_guard(done);
+  auto tracker = done->Tracker();
+  tracker->SetServiceQueueWaitTime();
+
+  ServiceHelper::SetError(copResponse->mutable_error(), pb::error::ECOP_OP_NOT_EXIST, "Cop op does not exist");
+}
+
+void DoTxnCoprocessor(StoragePtr storage, google::protobuf::RpcController* controller,
+                      const dingodb::pb::store::TxnCoprocessorRequest* request, dingodb::pb::store::TxnCoprocessorResponse* response,
+                      TrackClosure* done) {
+  dingodb::pb::store::TxnCoprocessorType pushdownType = request->cop_type();
+  const std::string NONE_OP_ERROR_INFO = "Cop operation does not exist.";
+
+  switch (pushdownType) {
+    case ::dingodb::pb::store::NONE: {
+      DoCopDefault(response, done);
+      break;
+    }
+    case ::dingodb::pb::store::COP_AGG_COUNT_WITHOUT_FILTER_PROJECT: {
+      DoCopAggCount(storage, controller, request, response, done);
+      break;
+    }
+    default:
+    {
+      DoCopDefault(response, done);
+    }
+  }
+}
+
+void StoreServiceImpl::TxnCoprocessor(google::protobuf::RpcController* controller,
+                    const pb::store::TxnCoprocessorRequest* request,
+                    pb::store::TxnCoprocessorResponse* response,
+                    google::protobuf::Closure* done) {
+  auto* svr_done = new ServiceClosure(__func__, done, request, response);
+
+  if (BAIDU_UNLIKELY(svr_done->GetRegion() == nullptr)) {
+    brpc::ClosureGuard done_guard(svr_done);
+    return;
+  }
+
+  // Run in queue.
+  auto task = std::make_shared<ServiceTask>([this, controller, request, response, svr_done]() {
+    DoTxnCoprocessor(storage_, controller, request, response, svr_done);
+  });
+
+  bool ret = read_worker_set_->ExecuteRR(task);
+  if (BAIDU_UNLIKELY(!ret)) {
+    brpc::ClosureGuard done_guard(svr_done);
+    ServiceHelper::SetError(response->mutable_txn_scan_response()->mutable_error(), pb::error::EREQUEST_FULL,
+                            "WorkerSet queue is full, please wait and retry");
+  }
 }
 
 void DoTxnPessimisticLock(StoragePtr storage, google::protobuf::RpcController* controller,

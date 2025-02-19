@@ -605,6 +605,15 @@ butil::Status MonoStoreEngine::TxnReader::TxnScan(
                                key_only, is_reverse, resolved_locks, disable_coprocessor, coprocessor, txn_result_info,
                                kvs, has_more, end_scan_key);
 }
+butil::Status MonoStoreEngine::TxnReader::TxnCopAggCount(
+    std::shared_ptr<Context> ctx, int64_t start_ts, const pb::common::Range& range, int64_t limit, bool key_only,
+    bool is_reverse, const std::set<int64_t>& resolved_locks, bool disable_coprocessor,
+    const pb::common::CoprocessorV2& coprocessor, pb::store::TxnResultInfo& txn_result_info,
+    std::vector<pb::common::KeyValue>& kvs, bool& has_more, std::string& end_scan_key) {
+  return TxnEngineHelper::CopAggCount(ctx->Stream(), txn_reader_raw_engine_, ctx->IsolationLevel(), start_ts, range, limit,
+                               key_only, is_reverse, resolved_locks, disable_coprocessor, coprocessor, txn_result_info,
+                               kvs, has_more, end_scan_key);
+}
 
 butil::Status MonoStoreEngine::TxnReader::TxnScanLock(std::shared_ptr<Context> ctx, int64_t min_lock_ts,
                                                       int64_t max_lock_ts, const pb::common::Range& range,

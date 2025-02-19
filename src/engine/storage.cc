@@ -1260,6 +1260,54 @@ butil::Status Storage::TxnScan(std::shared_ptr<Context> ctx, const pb::stream::S
   return butil::Status();
 }
 
+butil::Status Storage::TxnCopAggCount(std::shared_ptr<Context> ctx, const pb::stream::StreamRequestMeta& req_stream_meta,
+                               int64_t start_ts, const pb::common::Range& range, int64_t limit, bool key_only,
+                               bool is_reverse, const std::set<int64_t>& resolved_locks,
+                               pb::store::TxnResultInfo& txn_result_info, std::vector<pb::common::KeyValue>& kvs,
+                               bool& has_more, std::string& end_scan_key, bool disable_coprocessor,
+                               const pb::common::CoprocessorV2& coprocessor) {
+  auto status = ValidateLeader(ctx->RegionId());
+  if (BAIDU_UNLIKELY(!status.ok())) {
+    return status;
+  }
+
+  // after validate leader
+  auto stream_meta = req_stream_meta;
+  if (stream_meta.limit() == 0) stream_meta.set_limit(limit);
+  auto stream = Server::GetInstance().GetStreamManager()->GetOrNew(stream_meta);
+  if (stream == nullptr) {
+    return butil::Status(pb::error::ESTREAM_EXPIRED, fmt::format("stream({}) is expired.", stream_meta.stream_id()));
+  }
+  ctx->SetStream(stream);
+
+  DINGO_LOG(DEBUG) << "TxnCopAggCount region_id: " << ctx->RegionId() << ", range: " << Helper::RangeToString(range)
+                   << ", limit: " << limit << ", start_ts: " << start_ts << ", key_only: " << key_only
+                   << ", is_reverse: " << is_reverse << ", resolved_locks size: " << resolved_locks.size()
+                   << ", txn_result_info: " << txn_result_info.ShortDebugString() << ", kvs size: " << kvs.size()
+                   << ", has_more: " << has_more << ", end_key: " << Helper::StringToHex(end_scan_key);
+
+  auto reader = GetEngineTxnReader(ctx->StoreEngineType(), ctx->RawEngineType());
+
+  status = reader->TxnCopAggCount(ctx, start_ts, range, limit, key_only, is_reverse, resolved_locks, disable_coprocessor,
+                           coprocessor, txn_result_info, kvs, has_more, end_scan_key);
+  if (BAIDU_UNLIKELY(!status.ok())) {
+    if (pb::error::EKEY_NOT_FOUND == status.error_code()) {
+      // return OK if not found
+      return butil::Status::OK();
+    }
+
+    Server::GetInstance().GetStreamManager()->RemoveStream(stream);
+
+    return status;
+  }
+
+  if (!has_more || stream_meta.close()) {
+    Server::GetInstance().GetStreamManager()->RemoveStream(stream);
+  }
+
+  return butil::Status();
+}
+
 butil::Status Storage::TxnPessimisticLock(std::shared_ptr<Context> ctx,
                                           const std::vector<pb::store::Mutation>& mutations,
                                           const std::string& primary_lock, int64_t start_ts, int64_t lock_ttl,
