@@ -288,6 +288,7 @@ include(yaml-cpp)
 include(ftxui)
 include(hnswlib)
 include(bdb)
+include(gmp)
 include(tantivy-search)
 
 set(MESSAGE_SOURCE_DIR ${CMAKE_SOURCE_DIR}/dingo-store-proto/proto)
@@ -334,7 +335,9 @@ add_custom_target(
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/serial/src/)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/libexpr/src/)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/libexpr/src/types/decimal)
 include_directories(${BDB_INCLUDE_DIR})
+include_directories(${GMP_INCLUDE_DIR})
 if(ENABLE_XDPROCKS)
   include_directories(${XDPROCKS_PATH}/include)
 endif()
@@ -366,7 +369,9 @@ set(DYNAMIC_LIB
     ${TANTIVY_SEARCH_LIBRARIES}
     ${FTXUI_COMPONENT_LIBRARY}
     ${FTXUI_DOM_LIBRARY}
-    ${FTXUI_SCREEN_LIBRARY})
+    ${FTXUI_SCREEN_LIBRARY}
+    ${GMP_LIBRARIES}
+    ${GMPXX_LIBRARIES})
 
 if(ENABLE_XDPROCKS)
   set(DYNAMIC_LIB ${DYNAMIC_LIB} "${XDPROCKS_PATH}/lib/libxdprocks.a" "${XDPROCKS_PATH}/lib/libstorelib.a"
@@ -387,6 +392,7 @@ set(DEPEND_LIBS
     yamlcpp
     faiss
     bdb
+    gmp
     tantivy-search
     ftxui)
 

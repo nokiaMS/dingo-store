@@ -34,3 +34,6 @@
 [submodule "contrib/FTXUI"]
 	path = contrib/FTXUI
 	url = https://github.com/ArthurSonzogni/FTXUI.git
+[submodule "contrib/gmp"]
+	path = contrib/gmp
+	url = https://github.com/nokiaMS/gmp
