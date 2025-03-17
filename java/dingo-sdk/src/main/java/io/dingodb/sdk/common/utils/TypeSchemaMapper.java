@@ -20,7 +20,7 @@ public class TypeSchemaMapper {
       addScalaTypeSchemaMapping("FLOAT", FloatSchema::new);
       addScalaTypeSchemaMapping("DOUBLE", DoubleSchema::new);
       addScalaTypeSchemaMapping("REAL", DoubleSchema::new);
-      addScalaTypeSchemaMapping("DECIMAL", StringSchema::new);
+      addScalaTypeSchemaMapping("DECIMAL", DecimalSchema::new);
       addScalaTypeSchemaMapping("STRING", StringSchema::new);
       addScalaTypeSchemaMapping("CHAR", StringSchema::new);
       addScalaTypeSchemaMapping("VARCHAR", StringSchema::new);
@@ -49,8 +49,8 @@ public class TypeSchemaMapper {
       addCompoundTypeSchemaMapping("ARRAY", "FLOAT", FloatListSchema::new);
       addCompoundTypeSchemaMapping("ARRAY", "DOUBLE", DoubleListSchema::new);
       addCompoundTypeSchemaMapping("ARRAY", "REAL", DoubleListSchema::new);
-      addCompoundTypeSchemaMapping("ARRAY", "DECIMAL", StringListSchema::new);
       addCompoundTypeSchemaMapping("ARRAY", "STRING", StringListSchema::new);
+      addCompoundTypeSchemaMapping("ARRAY", "DECIMAL", DecimalListSchema::new);
       addCompoundTypeSchemaMapping("ARRAY", "CHAR", StringListSchema::new);
       addCompoundTypeSchemaMapping("ARRAY", "VARCHAR", StringListSchema::new);
       addCompoundTypeSchemaMapping("ARRAY", "DATE", LongListSchema::new);
